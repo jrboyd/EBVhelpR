@@ -23,7 +23,13 @@
   all_dt_l
 }
 
-.get_data_dir <- function() {
+#' Title
+#'
+#' @returns
+#' @export
+#'
+#' @examples
+get_image_data_dir <- function() {
   env_dir <- Sys.getenv("EBVHELPER_DATA_DIR", unset = "")
   win_dir <- "C:/Users/boydj/OneDrive - UVM Larner College of Medicine/Lee, Kyra C's files - VolaricDataAndScriptsForJoe/"
   lin_dir <- "/gpfs1/home/j/r/jrboyd/VolaricDataAndScriptsForJoe/"

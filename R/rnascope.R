@@ -52,8 +52,8 @@ load_rnascope_summary_files <- function(data_dir = NULL) {
 
 #' Harmonize RNAscope summaries with EBV status metadata
 #'
-#' Loads RNAscope summary data and metadata, maps sample identifiers, and appends
-#' `EBV_Status` annotation.
+#' Loads RNAscope summary data and metadata, maps sample_id identifiers, and appends
+#' `EBER_status` annotation.
 #'
 #' @param data_dir Optional directory containing source summary files. If `NULL`,
 #'   the package resolver checks `EBVHELPER_DATA_DIR` and known default paths.
@@ -62,17 +62,17 @@ load_rnascope_summary_files <- function(data_dir = NULL) {
 #' @export
 harmonize_rnascope_summary_files <- function(data_dir = NULL) {
   rscope_dt <- load_rnascope_summary_files(data_dir = data_dir)
-  meta_df <- load_meta_data(data_dir = data_dir)
+  meta_df <- load_meta_data()
 
-  s2s <- meta_df$sample
+  s2s <- meta_df$sample_id
   names(s2s) <- meta_df$SampleStripped
   rscope_dt$SampleID <- s2s[rscope_dt$SampleNumber]
 
-  anno_df <- dplyr::select(meta_df, SampleID = .data$sample, .data$EBV_Status)
+  anno_df <- dplyr::select(meta_df, SampleID = .data$sample_id, .data$EBER_status)
   rscope_dt <- merge(rscope_dt, anno_df, all.x = TRUE)
   rscope_dt <- dplyr::mutate(
     rscope_dt,
-    EBV_Status = ifelse(is.na(.data$EBV_Status), "need info", .data$EBV_Status)
+    EBER_status = ifelse(is.na(.data$EBER_status), "need info", .data$EBER_status)
   )
 
   rscope_dt
