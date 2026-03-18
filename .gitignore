@@ -1,0 +1,8 @@
+.Rproj.user
+.Rhistory
+tests/testthat/Rplots.pdf
+*.Rproj
+inst/extdata/301_CellPellet_NegCTL_Scan1_PC3Guise.ome.tiff
+*pdf
+*log
+*html

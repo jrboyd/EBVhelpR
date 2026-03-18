@@ -1,0 +1,232 @@
+---
+title: "tiff_confirm"
+author: "Joe Boyd"
+date: "2026-03-03"
+output:
+    BiocStyle::html_document:
+    toc_float: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, fig.width = 12, fig.height = 7.5)
+```
+
+## Objective
+
+Confirm channels, orientation, etc for tiff files
+
+```{r}
+library(tidyverse)
+library(EBVhelpR)
+```
+
+## Select TIFFs
+
+Image files uploaded so far
+
+```{r}
+dir("/netfiles/volaric_research/DLBCL_EBV_detection/image_files/Phenocycler")
+dir("/netfiles/volaric_research/DLBCL_EBV_detection/image_files/RNAScopeRound1")
+dir("/netfiles/volaric_research/DLBCL_EBV_detection/image_files/RNAScopeRound2")
+```
+
+Manually select a few to use for examples
+
+```{r}
+pheno_tiffs = c(
+  "/netfiles/volaric_research/DLBCL_EBV_detection/image_files/Phenocycler/201_D-EB-3_cropped.ome.tiff",
+  "/netfiles/volaric_research/DLBCL_EBV_detection/image_files/Phenocycler/234_CTEBV2_cropped.ome.tiff"
+)
+
+rscope1_tiffs= c(
+  "/netfiles/volaric_research/DLBCL_EBV_detection/image_files/RNAScopeRound1/D-EB-22.ome.tiff",
+  "/netfiles/volaric_research/DLBCL_EBV_detection/image_files/RNAScopeRound1/D-EB-16.qptiff"
+)
+
+rscope2_tiffs = c(
+  "/netfiles/volaric_research/DLBCL_EBV_detection/image_files/RNAScopeRound2/300_CellPellet_EBER-LMP1-EBNA1_GM18502.ome.tiff",
+  "/netfiles/volaric_research/DLBCL_EBV_detection/image_files/RNAScopeRound2/301_CellPellet_NegCTL_Scan2_GM12878.ome.tiff",
+  "/netfiles/volaric_research/DLBCL_EBV_detection/image_files/RNAScopeRound2/201_D-EB-2_D-EB-3.tif"
+)
+```
+
+## Helper functions
+
+```{r}
+my_plot = function(tiff_dat){
+  plot(tiff_dat) + labs(title = basename(tiff_dat@tiff_path)) +
+    coord_fixed()
+}
+
+my_zoom = function(tiff_dat, zoom_rect){
+  p = tiff_dat@plots$channels
+  p_anno = p %>% rect_annotate(zoom_rect)
+  zoom_dat = fetchTiffData(tiff_dat$tiff_path, rect = zoom_rect, precalc_max = tiff_dat@precalc_max)
+  zoom_dat@plots[["original"]] = p_anno
+  zoom_dat@plots[["assembly"]] = cowplot::plot_grid(p_anno, zoom_dat@plots$channels)
+  zoom_dat@activePlot = "assembly"
+  zoom_dat
+}
+```
+
+## Phenocycler
+
+```{r}
+pc_1 = fetchTiffData(pheno_tiffs[1], TiffRect(0, 10e4, 0, 10e4))
+pc_2 = fetchTiffData(pheno_tiffs[2], TiffRect(0, 10e4, 0, 10e4))
+```
+
+```{r}
+my_plot(pc_1)
+my_plot(pc_2)
+```
+
+```{r, fig.width=20}
+r1 = pc_1@rect %>% 
+  rect_resize_mult(.25, anchor = "botleft") %>% 
+  rect_shift(dy = -4e4) %>%
+  rect_resize_mult(.25)
+# plot(pc_1) %>% rect_annotate(rect = r1)
+pc_1.1 = my_zoom(pc_1, r1)
+plot(pc_1.1)
+```
+```{r, fig.width=20}
+r2 = TiffRect(13e3, 13.5e3, 45.5e3, 46e3)
+pc_1.2 = my_zoom(pc_1.1, r2)
+plot(pc_1.2)
+```
+
+## RNAScope1 4 plex
+
+```{r}
+rs_1 = fetchTiffData(rscope1_tiffs[1], TiffRect(0, 10e4, 0, 10e4))
+rs_2 = fetchTiffData(rscope1_tiffs[2], TiffRect(0, 10e4, 0, 10e4))
+```
+
+```{r}
+my_plot(rs_1)
+my_plot(rs_2)
+```
+
+```{r, fig.width=16, fig.height=6}
+zoom_rect = rect_resize_mult(rs_1$rect, .15, anchor = "topleft")
+zoom_rect = zoom_rect %>% rect_shift(55e3, 2e4) %>% rect_resize_abs(5e3, 5e3)
+rs_1.1 = my_zoom(rs_1, zoom_rect)
+plot(rs_1.1)
+```
+
+```{r, fig.width=16, fig.height=6}
+zoom_rect2 = zoom_rect %>% rect_resize_mult(.3, anchor = "botleft")
+zoom_rect2 = zoom_rect2 %>% rect_shift(1e3, -500) %>% rect_resize_mult(.5)
+rs_1.2 = my_zoom(rs_1.1, zoom_rect2)
+plot(rs_1.2)
+```
+
+## RNAScope2 3 plex+IF
+
+
+```{r}
+rs2_1 = fetchTiffData(rscope2_tiffs[1], TiffRect(0, 10e4, 0, 10e4))
+rs2_2 = fetchTiffData(rscope2_tiffs[2], TiffRect(0, 10e4, 0, 10e4))
+```
+
+```{r}
+my_plot(rs2_1)
+my_plot(rs2_2)
+```
+
+```{r, fig.width=20}
+zr = TiffRect(5e3, 10e3, 5e3, 10e3)
+rs2_2.1 = my_zoom(rs2_2, zr)
+plot(rs2_2.1)
+```
+
+```{r, fig.width=20}
+zr = TiffRect(6.5e3, 7.2e3, 6.5e3, 7e3)
+rs2_2.2 = my_zoom(rs2_2.1, zr)
+plot(rs2_2.2)
+```
+
+## Per cell data
+
+```{r}
+df = data.table::fread("/users/j/r/jrboyd/VolaricDataAndScriptsForJoe/4PlexRNAScope_Jan2026_Object_Results.csv")
+head(df)
+dim(df)
+
+tabs = df$`Image Location` %>%  basename %>% table
+tiff_in_xls = names(tabs)
+samples_in_xls = tiff_in_xls %>% 
+  strsplit("\\\\") %>% 
+  sapply(function(x)x[length(x)]) %>% sub('\"$', "", x = .) %>% 
+  sub("\\..+", "", .) %>% sub("_Res.+", "", .)
+names(samples_in_xls) = tiff_in_xls
+names(tabs) = samples_in_xls
+tabs
+```
+
+```{r}
+df$sample_id = samples_in_xls[df$`Image Location`]
+head(df$sample_id)
+```
+
+```{r}
+rscope1_names = rscope1_tiffs %>% basename() %>% sub("\\..+", "", .)
+rscope1_names %in% names(tabs)
+```
+
+```{r}
+df.sel = subset(df, sample_id %in% rscope1_names)
+df.sel$sample_id %>% table
+```
+
+```{r}
+df.sel$XMax
+df.sel = df.sel %>% mutate(x = (XMin + XMax)/2, y = (YMin + YMax)/2)
+```
+```{r}
+ggplot(df.sel, aes(x = x, y = y)) +
+  geom_point() +
+  facet_wrap(~sample_id)
+```
+
+```{r}
+rs_1@tiff_path
+rs_1
+```
+
+```{r}
+x = subset(df.sel, sample_id == "D-EB-16")
+rs_2@tiff_path
+rs_2@plots$channels + annotate("point", x= x$x, y = x$y, color = "green") 
+```
+
+```{r}
+x = subset(df.sel, sample_id == "D-EB-22")
+rs_1@tiff_path
+rs_1@plots$channels + annotate("point", x= x$x, y = x$y, color = "green") 
+```
+```{r, fig.width = 16, fig.height=8}
+rs_1.2@plots$channels
+r = rs_1.2@rect
+x.2 = subset(x, x < r@xmax & x > r@xmin & y < r@ymax & y > r@ymin)
+
+rs_1.2@plots$channels + annotate("point", x= x.2$x, y = x.2$y, color = "green")
+
+rs_1.2@plots$channels + annotate("rect", xmin= x.2$XMin, xmax = x.2$XMax, ymin = x.2$YMin, ymax = x.2$YMax, color = "green", fill = NA) 
+```
+
+```{r}
+if(FALSE){
+  weird_tifs = dir("/netfiles/volaric_research/DLBCL_EBV_detection/image_files", recursive = TRUE, pattern = "tif$", full.names = TRUE)
+  tmp = RBioFormats::ImageMetadata(weird_tifs[1])
+  tmp@.Data
+  RBioFormats::ImageMetadata(weird_tifs[2])
+  lapply(weird_tifs, RBioFormats::ImageMetadata)
+  fetchTiffData(weird_tifs[1], TiffRect(0, 10e4, 0, 10e4))
+  fetchTiffData(weird_tifs[2], TiffRect(0, 10e4, 0, 10e4))
+  fetchTiffData(weird_tifs[3], TiffRect(0, 10e4, 0, 10e4))
+  fetchTiffData(weird_tifs[4], TiffRect(0, 10e4, 0, 10e4))
+}
+```
+
