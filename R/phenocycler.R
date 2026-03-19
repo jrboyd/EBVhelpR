@@ -11,7 +11,7 @@
 #' @export
 load_phenocycler_summary_files <- function(data_dir = NULL) {
   if (is.null(data_dir)) {
-    data_dir <- .get_data_dir()
+    data_dir <- get_original_cell_data_dir()
   }
   stopifnot(dir.exists(data_dir))
 

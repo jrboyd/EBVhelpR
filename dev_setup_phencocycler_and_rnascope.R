@@ -11,187 +11,82 @@ rscop_summary = EBVhelpR::load_rnascope_summary_files()
 rscop_summary$source %>% table
 EBVhelpR::harmonize_rnascope_summary_files()
 
-data_dir = EBVhelpR:::get_image_data_dir()
 
-get_image_data_dir = EBVhelpR:::get_image_data_dir
+debug(load_cell_source_files)
+load_cell_source_files()
 
-get_pkg_data_dir = function(){
-  main_dir = get_image_data_dir()
-  file.path(main_dir, "../EBVhelpR_data")
-}
-pkg_data_dir = get_pkg_data_dir()
-
-rscop_object_files = dir(data_dir, pattern = "ObjectData_Clean", full.names = TRUE)
-rscop_object_files = rscop_object_files[!grepl("Sara", rscop_object_files)]
-pheno_object_files = dir(file.path(data_dir, "PhenocyclerReAnalysis_102025"), pattern = "Total_Object_Results.+csv$", recursive = TRUE)
-
-group_rscope_files = function(files){
-  paste0("RNAScope_", ifelse(grepl("RNAScopeIF", files), "3plex+IF", "4plex"))
-}
-
-file = rscop_object_files[1]
-
-
-#' This must be run ONCE to split cell object data by sample. Also, if cell object data changes, rerun this after deleting old data.
-#'
-#' @param file 
-#'
-#' @returns
-#' @export
-#'
-#' @examples
-write_package_data_rnascope_data = function(file){
-  f_group = group_rscope_files(file)
-  
-  out_dir = file.path(get_pkg_data_dir(), f_group)
-  dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
-  
-  meta_f_name = paste0("metadata_", basename(file))
-  out_meta_file = file.path(out_dir, meta_f_name)
-  if(file.exists(out_meta_file)){
-    message("prematurely exitting, meta file exists: ", out_meta_file)
-    return(out_meta_file)
-  }
-  message("reading input file ", file)
-  obj_dat= read.csv(file)
-  single_tons = sapply(obj_dat, function(x){
-    length(unique(x)) == 1
-  })
-  obj_singletons = unique(obj_dat[, single_tons])
-  obj_dat = obj_dat[, !single_tons]
-  obj_dat.by_image = split(obj_dat, obj_dat$ImageLocation)
-  obj_images = names(obj_dat.by_image)
-  if(basename(file) == "RNAScope_CellPellet_ObjectData_Cleaned_2026-01-12.csv"){
-    str_extract = function(x, delim = "_"){
-      sapply(strsplit(x, delim), function(x){
-        paste(x[length(x)], x[length(x)-2], sep = '_')
-      })
-    }  
-  }else if(basename(file) == "RNAScope_ObjectData_Cleaned_01122026.csv"){
-    # browser()
-    str_extract = function(x){x}
-    # str_extract = function(x, delim = "_"){
-    #   sapply(strsplit(x, delim), function(x){
-    #     paste(x[length(x)], x[length(x)-2], sep = '_')
-    #   })
-    # }
-  }else{
-    # browser()
-    str_extract = function(x){x}
-  }
-  
-  obj_names = obj_images %>% gsub("\\\\", "/", .) %>% basename %>% sub("\\..+", "", .) %>% str_extract
-  # normalizePath(obj_images, winslash = "\\")
-  obj_names
-  img_meta_df = data.frame(image_name = obj_names, image = obj_images)
-  for(name in colnames(obj_singletons)){
-    img_meta_df[[name]] = obj_singletons[[name]]
-  }
-  img_meta_df[["source_file"]] = file
-  
-  names(obj_names) = obj_images
-  names(obj_dat.by_image) = obj_names[names(obj_dat.by_image)]
-  
-  name = img_meta_df$image_name[1]
-  for(name in img_meta_df$image_name){
-    message("writing ", name)
-    obj_dat.sel = obj_dat.by_image[[name]]
-    obj_dat.sel$ImageLocation = NULL
-    obj_dat.sel$image_name = name
-    
-    f_name = paste0(name, ".cell_data.csv")
-    out_f = file.path(out_dir, f_name)
-    
-    write.csv(obj_dat.sel, out_f)
-  }
-  
-  write.csv(img_meta_df, out_meta_file)
-}
-
-for(file in rscop_object_files){
-  write_package_data_rnascope_data(file)  
-}
-
-
-for(file in pheno_object_files){
-  write_package_data_rnascope_data(file)  
-}
-
-
-
-
-
-#' Title
-#'
-#' @returns
-#' @export
-#'
-#' @examples
-load_cell_source_files = function(){
-  
-  pkg_data_dir = get_pkg_data_dir()
-  
-  all_cell_data_files = list.files(pkg_data_dir, pattern = ".cell_data.csv$", recursive = TRUE)
-  
-  cell_meta_files = list.files(pkg_data_dir, pattern = "meta.+csv$", recursive = TRUE, full.names = TRUE)
-  lapply(cell_meta_files, read.csv)
-  
-  
-  cell_df = data.frame(file = all_cell_data_files)
-  
-  cell_df = cell_df %>% separate(file, sep = "/", into = c("assay", "image_name"), remove = FALSE) %>% mutate(image_name = sub("\\..+", "", image_name))
-  cell_df$name = cell_df$image_name
-  cell_df = cell_df %>% 
-    mutate(name = sub("_ ?[cC]ro.+", "", name)) %>% 
-    mutate(name = sub("^[0-9]+_", "", name)) %>% 
-    mutate(name = sub("EBER-LMP1-EBNA1", "PosCTL", name)) %>% 
-    mutate(name = sub("_Rescanned", "", name)) %>% 
-    mutate(name = gsub("_Rescanned", "", name))
-  cell_df = cell_df %>% mutate(sample_type = "cohort") %>%
-    # mutate(sample_type = ifelse(grepl("CellPellet", name), "pellet", sample_type)) %>%
-    mutate(sample_type = ifelse(grepl("CTL", name), "control", sample_type)) 
-  
-  cell_df = cell_df %>% 
-    mutate(name = gsub("-", "_", name)) %>% 
-    mutate(name = sub("^CTEBV", "CTEBV_", name))  %>% 
-    mutate(name = sub("_Scan2", "", name)) %>%
-    mutate(name = sub("CellPellet_", "", name))
-  
-  cell_df$sample_id = cell_df$name
-  
-  # intersect(meta_df$sample_id, cell_df$sample_id)
-  # setdiff(meta_df$sample_id, cell_df$sample_id)
-  # setdiff(cell_df$sample_id, meta_df$sample_id)
-  
-  
-  split(cell_df, cell_df$assay)
-  cell_df.by_type = split(cell_df, cell_df$sample_type)
-  
-  meta_df = EBVhelpR::load_meta_data()
-  
-  cell_df.by_type$cohort = merge(cell_df.by_type$cohort, meta_df, all.x = TRUE)
-  
-  #cohort sample are all set
-  stopifnot(all(cell_df.by_type$cohort$sample_id %in% meta_df$sample_id))
-  
-  
-  
-  #control samples need additional tweaks
-  cell_df.by_type$control = cell_df.by_type$control %>% 
-    mutate(sample_id  = sub("_2$", "", sample_id)) %>% 
-    mutate(control_type = ifelse(grepl("PosCTL", sample_id), "PosCTL", "NegCTL")) %>%
-    group_by(file) %>%
-    mutate(control_group = sub(control_type, "", sample_id)) %>%
-    mutate(control_group = sub("^_", "", control_group)) %>%
-    mutate(control_group = sub("_$", "", control_group)) %>%
-    mutate(sample_id = paste(control_group, control_type, sep = "_"))
-  
-  
-  cell_df = bind_rows(
-    cell_df.by_type$cohort,
-    cell_df.by_type$control
-  )
-}
+#' 
+#' #' Title
+#' #'
+#' #' @returns
+#' #' @export
+#' #'
+#' #' @examples
+#' load_cell_source_files = function(){
+#'   
+#'   pkg_data_dir = get_pkg_data_dir()
+#'   
+#'   all_cell_data_files = list.files(pkg_data_dir, pattern = ".cell_data.csv$", recursive = TRUE)
+#'   
+#'   cell_meta_files = list.files(pkg_data_dir, pattern = "meta.+csv$", recursive = TRUE, full.names = TRUE)
+#'   lapply(cell_meta_files, read.csv)
+#'   
+#'   
+#'   cell_df = data.frame(file = all_cell_data_files)
+#'   
+#'   cell_df = cell_df %>% separate(file, sep = "/", into = c("assay", "image_name"), remove = FALSE) %>% mutate(image_name = sub("\\..+", "", image_name))
+#'   cell_df$name = cell_df$image_name
+#'   cell_df = cell_df %>% 
+#'     mutate(name = sub("_ ?[cC]ro.+", "", name)) %>% 
+#'     mutate(name = sub("^[0-9]+_", "", name)) %>% 
+#'     mutate(name = sub("EBER-LMP1-EBNA1", "PosCTL", name)) %>% 
+#'     mutate(name = sub("_Rescanned", "", name)) %>% 
+#'     mutate(name = gsub("_Rescanned", "", name))
+#'   cell_df = cell_df %>% mutate(sample_type = "cohort") %>%
+#'     # mutate(sample_type = ifelse(grepl("CellPellet", name), "pellet", sample_type)) %>%
+#'     mutate(sample_type = ifelse(grepl("CTL", name), "control", sample_type)) 
+#'   
+#'   cell_df = cell_df %>% 
+#'     mutate(name = gsub("-", "_", name)) %>% 
+#'     mutate(name = sub("^CTEBV", "CTEBV_", name))  %>% 
+#'     mutate(name = sub("_Scan2", "", name)) %>%
+#'     mutate(name = sub("CellPellet_", "", name))
+#'   
+#'   cell_df$sample_id = cell_df$name
+#'   
+#'   # intersect(meta_df$sample_id, cell_df$sample_id)
+#'   # setdiff(meta_df$sample_id, cell_df$sample_id)
+#'   # setdiff(cell_df$sample_id, meta_df$sample_id)
+#'   
+#'   
+#'   split(cell_df, cell_df$assay)
+#'   cell_df.by_type = split(cell_df, cell_df$sample_type)
+#'   
+#'   meta_df = EBVhelpR::load_meta_data()
+#'   
+#'   cell_df.by_type$cohort = merge(cell_df.by_type$cohort, meta_df, all.x = TRUE)
+#'   
+#'   #cohort sample are all set
+#'   stopifnot(all(cell_df.by_type$cohort$sample_id %in% meta_df$sample_id))
+#'   
+#'   
+#'   
+#'   #control samples need additional tweaks
+#'   cell_df.by_type$control = cell_df.by_type$control %>% 
+#'     mutate(sample_id  = sub("_2$", "", sample_id)) %>% 
+#'     mutate(control_type = ifelse(grepl("PosCTL", sample_id), "PosCTL", "NegCTL")) %>%
+#'     group_by(file) %>%
+#'     mutate(control_group = sub(control_type, "", sample_id)) %>%
+#'     mutate(control_group = sub("^_", "", control_group)) %>%
+#'     mutate(control_group = sub("_$", "", control_group)) %>%
+#'     mutate(sample_id = paste(control_group, control_type, sep = "_"))
+#'   
+#'   
+#'   cell_df = bind_rows(
+#'     cell_df.by_type$cohort,
+#'     cell_df.by_type$control
+#'   )
+#' }
 
 # library(magrittr)
 # library(ggplot2)
@@ -216,7 +111,7 @@ load_cell_source_files = function(){
 #   all_dt_l
 # }
 # 
-# get_image_data_dir = function(){
+# get_original_cell_data_dir = function(){
 #   win_dir = r"(C:\Users\boydj\OneDrive - UVM Larner College of Medicine\Lee, Kyra C's files - VolaricDataAndScriptsForJoe\)"
 #   lin_dir = "/gpfs1/home/j/r/jrboyd/VolaricDataAndScriptsForJoe/"
 #   data_dir = win_dir
@@ -228,7 +123,7 @@ load_cell_source_files = function(){
 # }
 # 
 # load_phenocycler_summary_files = function(){
-#   data_dir = get_image_data_dir()
+#   data_dir = get_original_cell_data_dir()
 #   if(!dir.exists(data_dir)){
 #     data_dir = lin_dir
 #   }
@@ -258,7 +153,7 @@ load_cell_source_files = function(){
 # load_phenocycler_summary_files()
 # 
 # load_rnascope_summary_files = function(){
-#   data_dir = get_image_data_dir()
+#   data_dir = get_original_cell_data_dir()
 #   res_files = list.files(data_dir, pattern = "RNA.+csv", recursive = TRUE, full.names = TRUE)
 #   #pivot wider results
 #   res_files = res_files[!grepl("Wide", res_files)]
@@ -301,7 +196,7 @@ load_cell_source_files = function(){
 # # tmp$`RNAScopeIF_Coexpression_2026-02-11.csv`
 # 
 # load_meta_data = function(){
-#   data_dir = get_image_data_dir()
+#   data_dir = get_original_cell_data_dir()
 #   meta_file = list.files(data_dir, pattern = "EBVStatus.xlsx", recursive = TRUE, full.names = TRUE)
 #   meta_df = openxlsx::read.xlsx(meta_file)
 #   meta_df$SampleRaw = meta_df$Sample

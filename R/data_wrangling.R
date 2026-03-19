@@ -17,7 +17,7 @@
 #'
 #' @examples
 write_all_package_data = function(){
-  data_dir = get_image_data_dir()
+  data_dir = get_original_cell_data_dir()
   
   rscop_object_files = dir(data_dir, pattern = "ObjectData_Clean", full.names = TRUE)
   rscop_object_files = rscop_object_files[!grepl("Sara", rscop_object_files)]
@@ -48,7 +48,7 @@ write_all_package_data = function(){
 #' @export
 write_package_data_for_file <- function(file) {
   f_group <- .group_image_files(file)
-  out_dir <- file.path(.get_pkg_data_dir(), f_group)
+  out_dir <- file.path(get_wrangled_cell_data_dir(), f_group)
   dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
   
   out_meta_file <- file.path(out_dir, paste0("metadata_", basename(file)))

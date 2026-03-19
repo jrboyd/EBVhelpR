@@ -29,7 +29,7 @@
 #' @export
 #'
 #' @examples
-get_image_data_dir <- function() {
+get_original_cell_data_dir <- function() {
   env_dir <- Sys.getenv("EBVHELPER_DATA_DIR", unset = "")
   win_dir <- "C:/Users/boydj/OneDrive - UVM Larner College of Medicine/Lee, Kyra C's files - VolaricDataAndScriptsForJoe/"
   lin_dir <- "/gpfs1/home/j/r/jrboyd/VolaricDataAndScriptsForJoe/"
@@ -62,7 +62,13 @@ get_image_data_dir <- function() {
   pkg_file
 }
 
-.get_pkg_data_dir <- function() {
-  file.path(get_image_data_dir(), "../EBVhelpR_data")
+#' Title
+#'
+#' @returns
+#' @export
+#'
+#' @examples
+get_wrangled_cell_data_dir <- function() {
+  file.path(get_original_cell_data_dir(), "../EBVhelpR_data")
 }
 
