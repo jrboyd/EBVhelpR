@@ -2,7 +2,7 @@
 % Please edit documentation in R/rnascope.R
 \name{load_rnascope_summary_files}
 \alias{load_rnascope_summary_files}
-\title{Load RNAscope summary CSV files}
+\title{Harmonize RNAscope summaries with EBV status metadata}
 \usage{
 load_rnascope_summary_files(data_dir = NULL)
 }
@@ -11,10 +11,9 @@ load_rnascope_summary_files(data_dir = NULL)
 the package resolver checks `EBVHELPER_DATA_DIR` and known default paths.}
 }
 \value{
-A data frame with one row per record and a `source` column indicating
-  the assay source.
+A data frame with harmonized identifiers and EBV status annotation.
 }
 \description{
-Reads RNAscope coexpression summary files from the configured data directory
-and combines selected assay versions into one data frame.
+Loads RNAscope summary data and metadata, maps sample_id identifiers, and appends
+`EBER_status` annotation.
 }

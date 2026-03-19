@@ -1,5 +1,6 @@
 library(magrittr)
 library(tidyverse)
+library(EBVhelpR)
 
 EBVhelpR::write_all_package_data()
 
@@ -12,8 +13,16 @@ rscop_summary$source %>% table
 EBVhelpR::harmonize_rnascope_summary_files()
 
 
-debug(load_cell_source_files)
-load_cell_source_files()
+# debug(load_cell_source_files)
+EBVhelpR::load_cell_source_files()
+
+theme_set(theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1)))
+
+rscope_summary_df = harmonize_rnascope_summary_files()
+ggplot(rscope_summary_df, aes(x = combo, y = Positive_Percent)) +
+  geom_boxplot() +
+  facet_wrap(~source)
+
 
 #' 
 #' #' Title

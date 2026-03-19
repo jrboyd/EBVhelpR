@@ -8,8 +8,7 @@
 #'
 #' @return A data frame with one row per record and a `source` column indicating
 #'   the assay source.
-#' @export
-load_rnascope_summary_files <- function(data_dir = NULL) {
+.load_rnascope_summary_files <- function(data_dir = NULL) {
   if (is.null(data_dir)) {
     data_dir <- get_original_cell_data_dir()
   }
@@ -60,13 +59,25 @@ load_rnascope_summary_files <- function(data_dir = NULL) {
 #'
 #' @return A data frame with harmonized identifiers and EBV status annotation.
 #' @export
-harmonize_rnascope_summary_files <- function(data_dir = NULL) {
-  rscope_dt <- load_rnascope_summary_files(data_dir = data_dir)
+load_rnascope_summary_files <- function(data_dir = NULL) {
+  rscope_dt <- .load_rnascope_summary_files(data_dir = data_dir)
   meta_df <- load_meta_data()
-  
+  meta_df = meta_df %>% mutate(SampleStripped = gsub("_", "", sample_id))
   s2s <- meta_df$sample_id
   names(s2s) <- meta_df$SampleStripped
-  rscope_dt$SampleID <- s2s[rscope_dt$SampleNumber]
+  
+  # is_valid = rscope_dt$SampleNumber %in% names(s2s)
+  # rscope_dt[!is_valid,]$SampleNumber %>% table
+  # bad_samples = rscope_dt[!is_valid,]$SampleNumber %>% unique
+  # if(length(bad_samples) > 0){
+  #   warning("bad samples detected (removed):\n",
+  #           paste(bad_samples, collapse = "\n"))
+  # }
+  
+  rscope_dt = rscope_dt %>% mutate(SampleStripped := sub("(NegCTL)|(PosCTL)", "", SampleNumber))
+  
+  stopifnot(all(rscope_dt$SampleStripped %in% names(s2s)))
+  rscope_dt$SampleID <- s2s[rscope_dt$SampleStripped]
   
   anno_df <- dplyr::select(meta_df, SampleID = .data$sample_id, .data$EBER_status)
   rscope_dt <- merge(rscope_dt, anno_df, all.x = TRUE)
