@@ -15,5 +15,5 @@ A data frame with harmonized identifiers and EBV status annotation.
 }
 \description{
 Loads phenocycler summary data and metadata, maps sample identifiers, and
-appends `EBV_Status` annotation.
+appends `EBER_status` annotation.
 }

@@ -7,9 +7,9 @@
 load_meta_data()
 }
 \value{
-A data frame with columns `sample` and `EBER_status`.
+A data frame with columns `sample_id` and `EBER_status`.
 }
 \description{
-Reads the packaged EBER annotation file, standardizes sample naming, and
-expands composite entries into one row per sample.
+Reads the packaged EBER annotation file, standardizes sample_id naming, and
+expands composite entries into one row per sample_id.
 }

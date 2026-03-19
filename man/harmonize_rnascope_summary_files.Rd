@@ -14,6 +14,6 @@ the package resolver checks `EBVHELPER_DATA_DIR` and known default paths.}
 A data frame with harmonized identifiers and EBV status annotation.
 }
 \description{
-Loads RNAscope summary data and metadata, maps sample identifiers, and appends
-`EBV_Status` annotation.
+Loads RNAscope summary data and metadata, maps sample_id identifiers, and appends
+`EBER_status` annotation.
 }

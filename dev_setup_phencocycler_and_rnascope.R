@@ -1,5 +1,8 @@
 library(magrittr)
 library(tidyverse)
+
+EBVhelpR::write_all_package_data()
+
 EBVhelpR::load_phenocycler_summary_files()
 # debug(EBVhelpR::harmonize_phenocycler_summary_files)
 EBVhelpR::harmonize_phenocycler_summary_files()
@@ -110,7 +113,9 @@ for(file in rscop_object_files){
 }
 
 
-
+for(file in pheno_object_files){
+  write_package_data_rnascope_data(file)  
+}
 
 
 

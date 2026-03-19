@@ -61,3 +61,8 @@ get_image_data_dir <- function() {
 
   pkg_file
 }
+
+.get_pkg_data_dir <- function() {
+  file.path(get_image_data_dir(), "../EBVhelpR_data")
+}
+
