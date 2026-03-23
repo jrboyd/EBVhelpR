@@ -2,7 +2,7 @@
 % Please edit documentation in R/phenocycler.R
 \name{load_phenocycler_summary_files}
 \alias{load_phenocycler_summary_files}
-\title{Load phenocycler summary CSV files}
+\title{Harmonize phenocycler summaries with EBV status metadata and ensure compatible sample ids.}
 \usage{
 load_phenocycler_summary_files(data_dir = NULL)
 }
@@ -11,10 +11,9 @@ load_phenocycler_summary_files(data_dir = NULL)
 the package resolver checks `EBVHELPER_DATA_DIR` and known default paths.}
 }
 \value{
-A data frame with one row per record and a `source` column indicating
-  the file group.
+A data frame with harmonized identifiers and EBV status annotation.
 }
 \description{
-Reads all phenocycler summary CSV files from the configured data directory,
-combines them, and derives a standardized `Sample` identifier.
+Loads phenocycler summary data and metadata, maps sample identifiers, and
+appends `EBER_status` annotation.
 }

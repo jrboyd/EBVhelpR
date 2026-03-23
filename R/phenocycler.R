@@ -8,8 +8,7 @@
 #'
 #' @return A data frame with one row per record and a `source` column indicating
 #'   the file group.
-#' @export
-load_phenocycler_summary_files <- function(data_dir = NULL) {
+.find_and_load_phenocycler_summary_files <- function(data_dir = NULL) {
   if (is.null(data_dir)) {
     data_dir <- get_original_cell_data_dir()
   }
@@ -42,7 +41,7 @@ load_phenocycler_summary_files <- function(data_dir = NULL) {
   dt
 }
 
-#' Harmonize phenocycler summaries with EBV status metadata
+#' Harmonize phenocycler summaries with EBV status metadata and ensure compatible sample ids.
 #'
 #' Loads phenocycler summary data and metadata, maps sample identifiers, and
 #' appends `EBER_status` annotation.
@@ -52,12 +51,15 @@ load_phenocycler_summary_files <- function(data_dir = NULL) {
 #'
 #' @return A data frame with harmonized identifiers and EBV status annotation.
 #' @export
-harmonize_phenocycler_summary_files <- function(data_dir = NULL) {
-  pcycler_dt <- load_phenocycler_summary_files(data_dir = data_dir)
+load_phenocycler_summary_files <- function(data_dir = NULL) {
+  pcycler_dt <- .find_and_load_phenocycler_summary_files(data_dir = data_dir)
   meta_df <- load_meta_data()
+  meta_df = meta_df %>% mutate(SampleStripped = gsub("_", "", sample_id))
 
   s2s <- meta_df$sample_id
   names(s2s) <- meta_df$SampleStripped
+
+  stopifnot(all(pcycler_dt$Sample %in% names(s2s)))
   pcycler_dt$SampleID <- s2s[pcycler_dt$Sample]
 
   anno_df <- dplyr::select(meta_df, SampleID = .data$sample_id, .data$EBER_status)
