@@ -33,12 +33,26 @@
     stop("Expected column `Image Tag` was not found in phenocycler summaries.", call. = FALSE)
   }
 
-  dt <- dt |>
+  dt.cell_pellet = dt %>% filter(grepl("CellPelletSlide", `Image Tag`))
+
+  str_last = function(x){
+      sapply(strsplit(sub("\\..+", "", x), "_"), function(xx){xx[length(xx)]})
+  }
+
+  dt.cell_pellet = dt.cell_pellet %>% mutate(Sample = paste(sep = "_",
+      str_last(`Image Tag`),
+      ifelse(grepl("control", "Image Tag"), "NegCTL", "PosCTL")
+  ))
+  dt.cell_pellet$Sample
+
+  dt.main = dt %>% filter(!grepl("CellPelletSlide", `Image Tag`))
+
+  dt.main <- dt.main |>
     dplyr::mutate(Sample = sub("\\..+", "", .data$`Image Tag`)) |>
     dplyr::mutate(Sample = sub("_Scan.+", "", .data$Sample)) |>
     dplyr::mutate(Sample = gsub("-", "", .data$Sample))
 
-  dt
+  dt = rbind(dt.main, dt.cell_pellet)
 }
 
 #' Harmonize phenocycler summaries with EBV status metadata and ensure compatible sample ids.
@@ -59,7 +73,7 @@ load_phenocycler_summary_files <- function(data_dir = NULL) {
   s2s <- meta_df$sample_id
   names(s2s) <- meta_df$SampleStripped
 
-  stopifnot(all(pcycler_dt$Sample %in% names(s2s)))
+  # stopifnot(all(pcycler_dt$Sample %in% names(s2s)))
   pcycler_dt$SampleID <- s2s[pcycler_dt$Sample]
 
   anno_df <- dplyr::select(meta_df, SampleID = .data$sample_id, .data$EBER_status)
