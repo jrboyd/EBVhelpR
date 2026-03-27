@@ -12,10 +12,13 @@
 
 #' Title
 #'
-#' @returns
+#' @returns Invisibly returns NULL after attempting to write all package data files.
 #' @export
 #'
 #' @examples
+#' \dontrun{
+#' write_all_package_data()
+#' }
 write_all_package_data = function(){
   data_dir = get_original_cell_data_dir()
 
@@ -136,7 +139,10 @@ get_tiff_file_path_df = function(){
     }
     if(!dir.exists(tiff_dir)){
         warning("Could not locate TIFF root directory. Returning example tiffs with fake paths.")
-        return(.get_example_images_df())
+        out_df = .get_example_images_df()
+        out_df$project_name = out_df$assay
+        out_df$assay = project_name_to_assay[out_df$project_name]
+        return(out_df)
     }
     dir_names = dir(tiff_dir)
     stopifnot(all(.get_valid_project_names() %in% dir_names))
@@ -148,29 +154,29 @@ get_tiff_file_path_df = function(){
     })
     tiff_df = bind_rows(tiff_files.by_project, .id = "assay")
 
-    tiff_df = tiff_df %>% mutate(name = basename(tiff_file))
+    tiff_df = tiff_df %>% dplyr::mutate(name = basename(tiff_file))
     tiff_df = tiff_df %>%
-        mutate(name = sub("\\..+", "", name)) %>%
-        mutate(name = sub("^[0-9]{3}_", "", name)) %>%
-        mutate(name = sub("_ ?croo?p?ped$", "", name)) %>%
-        mutate(name = gsub("-", "_", name))
+        dplyr::mutate(name = sub("\\..+", "", name)) %>%
+        dplyr::mutate(name = sub("^[0-9]{3}_", "", name)) %>%
+        dplyr::mutate(name = sub("_ ?croo?p?ped$", "", name)) %>%
+        dplyr::mutate(name = gsub("-", "_", name))
 
     tiff_df = tiff_df %>%
-        mutate(name = ifelse(
+        dplyr::mutate(name = ifelse(
             grepl("D_EB.+D_EB", name),
             sub("_D", " D", name),
             name
         ))
     tiff_df = tiff_df %>%
-        mutate(name = ifelse(
+        dplyr::mutate(name = ifelse(
             grepl("CTEBV.+CTEBV", name),
             sub("_CTEBV", " CTEBV", name),
             name
         ))
 
-    tiff_df = tiff_df %>% group_by(assay, tiff_file) %>% reframe(name = strsplit(name, " ")[[1]])
+    tiff_df = tiff_df %>% group_by(assay, tiff_file) %>% dplyr::reframe(name = strsplit(name, " ")[[1]])
     tiff_df = tiff_df %>%
-        mutate(name = ifelse(
+        dplyr::mutate(name = ifelse(
             grepl("CTEBV[0-9]", name),
             sub("CTEBV", "CTEBV_", name),
             name
@@ -186,17 +192,21 @@ get_tiff_file_path_df = function(){
         paste(cells, control_group, sep = '_')
     }
     tiff_df = tiff_df %>%
-        mutate(name = ifelse(
+        dplyr::mutate(name = ifelse(
             grepl("CellPellet", name),
             .cp_name(name),
             name
         ))
 
     tiff_df = tiff_df %>%
-        mutate(name = sub("2468_", "", name)) %>%
-        mutate(name = sub("_Rescanned_Cropped", "", name))
+        dplyr::mutate(name = sub("2468_", "", name)) %>%
+        dplyr::mutate(name = sub("_Rescanned_Cropped", "", name))
 
     tiff_df$sample_id = tiff_df$name
     tiff_df$name = NULL
+
+    tiff_df$project_name = tiff_df$assay
+    tiff_df$assay = project_name_to_assay[tiff_df$project_name]
+
     tiff_df
 }

@@ -6,6 +6,14 @@
 \usage{
 write_all_package_data()
 }
+\value{
+Invisibly returns NULL after attempting to write all package data files.
+}
 \description{
 Title
+}
+\examples{
+\dontrun{
+write_all_package_data()
+}
 }

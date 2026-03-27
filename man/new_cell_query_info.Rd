@@ -6,6 +6,7 @@
 \usage{
 new_cell_query_info(
   assay_type = NULL,
+  summary_df = NULL,
   all_cell_files_df = NULL,
   selected_cell_files_df = all_cell_files_df,
   tiff_paths_df = NULL
@@ -31,4 +32,5 @@ assay_type = EBV_ASSAY_TYPES$phenocycler
 all_cell_files_df = NULL
 selected_cell_files_df = all_cell_files_df
 tiff_paths_df = NULL
+get_tiff_file_path_df = EBVhelpR:::get_tiff_file_path_df
 }

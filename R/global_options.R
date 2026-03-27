@@ -1,16 +1,21 @@
 #' @export
 EBV_ASSAY_TYPES = list(
-    phenocycler = "phenocycler",
-    rnascope_4plex = "rnascope_4plex",
-    "rnascope_3plex+IF" = "rnascope_3plex+IF"
+    phenocycler = "Phenocycler",
+    rnascope_4plex = "RNAScope_4plex",
+    "rnascope_3plex+IF" = "RNAScope_3plex+IF"
 )
 
-EBV_DIR_NAMES = list(
-    phenocycler = "Phenocycler",
-    rnascope_4plex = "RNAScopeRound1",
-    "rnascope_3plex+IF" = "RNAScopeRound2"
+assay_to_project_name = c(
+    Phenocycler = "Phenocycler",
+    RNAScope_4plex = "RNAScopeRound1",
+    "RNAScope_3plex+IF" = "RNAScopeRound2"
 )
+
+project_name_to_assay = names(assay_to_project_name)
+names(project_name_to_assay) = assay_to_project_name
+
+
 
 .get_valid_project_names = function(){
-    unlist(EBV_DIR_NAMES[unlist(EBV_ASSAY_TYPES)])
+    assay_to_project_name[unlist(EBV_ASSAY_TYPES)]
 }

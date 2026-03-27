@@ -12,6 +12,7 @@
 methods::setClass(
     "CellQueryInfo",
     slots = c(
+        summary_df = "data.frame",
         all_cell_files_df = "data.frame",
         selected_cell_files_df = "data.frame",
         tiff_paths_df = "data.frame",
@@ -40,8 +41,10 @@ methods::setClass(
 #' all_cell_files_df = NULL
 #' selected_cell_files_df = all_cell_files_df
 #' tiff_paths_df = NULL
+#' get_tiff_file_path_df = EBVhelpR:::get_tiff_file_path_df
 new_cell_query_info <- function(
         assay_type = NULL,
+        summary_df = NULL,
         all_cell_files_df = NULL,
         selected_cell_files_df = all_cell_files_df,
         tiff_paths_df = NULL
@@ -53,17 +56,26 @@ new_cell_query_info <- function(
     }
     stopifnot(assay_type %in% EBV_ASSAY_TYPES)
     if(assay_type == EBV_ASSAY_TYPES$phenocycler){
-        all_cell_files_df = load_phenocycler_summary_files()
-        cell_info = load_cell_source_files()
-        cell_info = dplyr::filter(cell_info, assay == assay_type)
+        summary_df = load_phenocycler_summary_files()
+        all_cell_files_df = load_cell_source_files()
+        all_cell_files_df = dplyr::filter(all_cell_files_df, assay == assay_type)
+        selected_cell_files_df = all_cell_files_df
         tiff_info = get_tiff_file_path_df()
-    }else if(assay_type == EBV_ASSAY_TYPES$rnascope_4plex){
-
-    }else if(assay_type == EBV_ASSAY_TYPES$`rnascope_3plex+IF`){
-
+        tiff_info = dplyr::filter(tiff_info, assay == assay_type)
+    }else if(assay_type %in% c(EBV_ASSAY_TYPES$rnascope_4plex, EBV_ASSAY_TYPES$`rnascope_3plex+IF`)){
+        summary_df = load_rnascope_summary_files()
+        summary_df = dplyr::filter(summary_df, assay == assay_type)
+        all_cell_files_df = load_cell_source_files()
+        all_cell_files_df = dplyr::filter(all_cell_files_df, assay == assay_type)
+        selected_cell_files_df = all_cell_files_df
+        tiff_info = get_tiff_file_path_df()
+        tiff_info = dplyr::filter(tiff_info, assay == assay_type)
+    }else{
+        stop("Unrecognized assay type, see EBV_ASSAY_TYPES")
     }
     obj <- methods::new(
         "CellQueryInfo",
+        summary_df = summary_df,
         all_cell_files_df = all_cell_files_df,
         selected_cell_files_df = selected_cell_files_df,
         tiff_paths_df = tiff_paths_df,

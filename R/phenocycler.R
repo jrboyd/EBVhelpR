@@ -39,7 +39,7 @@
       sapply(strsplit(sub("\\..+", "", x), "_"), function(xx){xx[length(xx)]})
   }
 
-  dt.cell_pellet = dt.cell_pellet %>% mutate(Sample = paste(sep = "_",
+  dt.cell_pellet = dt.cell_pellet %>% dplyr::mutate(Sample = paste(sep = "_",
       str_last(`Image Tag`),
       ifelse(grepl("control", "Image Tag"), "NegCTL", "PosCTL")
   ))
@@ -76,12 +76,14 @@ load_phenocycler_summary_files <- function(data_dir = NULL) {
   # stopifnot(all(pcycler_dt$Sample %in% names(s2s)))
   pcycler_dt$SampleID <- s2s[pcycler_dt$Sample]
 
-  anno_df <- dplyr::select(meta_df, SampleID = .data$sample_id, .data$EBER_status)
+  anno_df <- dplyr::select(meta_df, SampleID = sample_id, EBER_status)
   pcycler_dt <- merge(pcycler_dt, anno_df, all.x = TRUE)
   pcycler_dt <- dplyr::mutate(
     pcycler_dt,
     EBER_status = ifelse(is.na(.data$EBER_status), "need info", .data$EBER_status)
   )
-
+  pcycler_dt$sample_id = pcycler_dt$SampleID
+  pcycler_dt$assay = EBV_ASSAY_TYPES$phenocycler
+  pcycler_dt$project_name = assay_to_project_name[EBV_ASSAY_TYPES$phenocycler]
   pcycler_dt
 }

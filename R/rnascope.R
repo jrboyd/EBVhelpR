@@ -33,8 +33,8 @@
   }
 
   file_rename <- c(
-    "RNAScope_Coexpression_2026-01-12.csv" = "4plex",
-    "RNAScopeIF_Coexpression_2026-02-11.csv" = "3plex+IF"
+    "RNAScope_Coexpression_2026-01-12.csv" = EBV_ASSAY_TYPES$rnascope_4plex,
+    "RNAScopeIF_Coexpression_2026-02-11.csv" = EBV_ASSAY_TYPES$`rnascope_3plex+IF`
   )
 
   names(res_files) <- file_rename[basename(res_files)]
@@ -46,7 +46,7 @@
   }
 
   all_dt_l <- .load_csv_list(res_files)
-  dplyr::bind_rows(all_dt_l, .id = "source")
+  dplyr::bind_rows(all_dt_l, .id = "assay")
 }
 
 #' Harmonize RNAscope summaries with EBV status metadata
@@ -62,7 +62,7 @@
 load_rnascope_summary_files <- function(data_dir = NULL) {
   rscope_dt <- .find_and_load_rnascope_summary_files(data_dir = data_dir)
   meta_df <- load_meta_data()
-  meta_df = meta_df %>% mutate(SampleStripped = gsub("_", "", sample_id))
+  meta_df = meta_df %>% dplyr::mutate(SampleStripped = gsub("_", "", sample_id))
   s2s <- meta_df$sample_id
   names(s2s) <- meta_df$SampleStripped
 
@@ -74,17 +74,22 @@ load_rnascope_summary_files <- function(data_dir = NULL) {
   #           paste(bad_samples, collapse = "\n"))
   # }
 
-  rscope_dt = rscope_dt %>% mutate(SampleStripped := sub("(NegCTL)|(PosCTL)", "", SampleNumber))
+  rscope_dt = rscope_dt %>% dplyr::mutate(SampleStripped := sub("(NegCTL)|(PosCTL)", "", SampleNumber))
 
   stopifnot(all(rscope_dt$SampleStripped %in% names(s2s)))
   rscope_dt$SampleID <- s2s[rscope_dt$SampleStripped]
 
-  anno_df <- dplyr::select(meta_df, SampleID = .data$sample_id, .data$EBER_status)
+  anno_df <- dplyr::select(meta_df, SampleID = sample_id, EBER_status)
   rscope_dt <- merge(rscope_dt, anno_df, all.x = TRUE)
   rscope_dt <- dplyr::mutate(
     rscope_dt,
     EBER_status = ifelse(is.na(.data$EBER_status), "need info", .data$EBER_status)
   )
+
+  rscope_dt$sample_id <- rscope_dt$SampleID
+  if (!"project_name" %in% colnames(rscope_dt)) {
+    rscope_dt$project_name <- assay_to_project_name[rscope_dt$assay]
+  }
 
   rscope_dt
 }
@@ -175,5 +180,9 @@ load_cell_source_files <- function() {
     ) |>
     dplyr::ungroup()
 
-  dplyr::bind_rows(cell_df.by_type$cohort, cell_df.by_type$control)
+  final_df = dplyr::bind_rows(cell_df.by_type$cohort, cell_df.by_type$control)
+  final_df$name = NULL
+  final_df$project_name <- final_df$assay
+  final_df$assay <- project_name_to_assay[final_df$project_name]
+  final_df
 }

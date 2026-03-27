@@ -6,6 +6,14 @@
 \usage{
 get_wrangled_cell_data_dir()
 }
+\value{
+Character scalar path to the package wrangled cell data directory.
+}
 \description{
 Title
+}
+\examples{
+\dontrun{
+get_wrangled_cell_data_dir()
+}
 }

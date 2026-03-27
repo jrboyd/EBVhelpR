@@ -6,6 +6,14 @@
 \usage{
 get_original_cell_data_dir()
 }
+\value{
+Character scalar path to the discovered original cell data directory.
+}
 \description{
 Title
+}
+\examples{
+\dontrun{
+get_original_cell_data_dir()
+}
 }

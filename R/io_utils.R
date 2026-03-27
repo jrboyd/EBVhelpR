@@ -25,10 +25,13 @@
 
 #' Title
 #'
-#' @returns
+#' @returns Character scalar path to the discovered original cell data directory.
 #' @export
 #'
 #' @examples
+#' \dontrun{
+#' get_original_cell_data_dir()
+#' }
 get_original_cell_data_dir <- function() {
   env_dir <- Sys.getenv("EBVHELPER_DATA_DIR", unset = "")
   win_dir <- "C:/Users/boydj/OneDrive - UVM Larner College of Medicine/Lee, Kyra C's files - VolaricDataAndScriptsForJoe/"
@@ -64,10 +67,13 @@ get_original_cell_data_dir <- function() {
 
 #' Title
 #'
-#' @returns
+#' @returns Character scalar path to the package wrangled cell data directory.
 #' @export
 #'
 #' @examples
+#' \dontrun{
+#' get_wrangled_cell_data_dir()
+#' }
 get_wrangled_cell_data_dir <- function() {
   file.path(get_original_cell_data_dir(), "../EBVhelpR_data")
 }
