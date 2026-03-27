@@ -75,45 +75,119 @@ ggplot(class_fraction, aes(x = sample_id, fill = name, y = fraction)) +
 
 #### look at example cells ####
 
-query_df = cell_df %>% filter(
-    Opal520Classification == 1
-)
-query_df.l = split(query_df, query_df$sample_id)
-n_cells = 9
-query_df.l = lapply(query_df.l, function(x){
-    x[sample(nrow(x), size = n_cells),]
-})
-
 library(TiffPlotR)
-rects_from_df = function(df){
-    lapply(seq(nrow(df)), function(i){
-        TiffRect(df$XMin[i], df$XMax[i], df$YMin[i], df$YMax[i])
+
+select_representative_cells <- function(
+    cell_df,
+    marker_col = "Opal520Classification",
+    marker_value = 1,
+    n_cells = 9,
+    sample_col = "sample_id",
+    seed = 1
+) {
+    stopifnot(marker_col %in% colnames(cell_df))
+    stopifnot(sample_col %in% colnames(cell_df))
+
+    query_df <- cell_df %>% filter(.data[[marker_col]] == marker_value)
+    query_df.l <- split(query_df, query_df[[sample_col]])
+
+    set.seed(seed)
+    query_df.l <- lapply(query_df.l, function(x) {
+        if (!nrow(x)) {
+            return(x)
+        }
+        n_take <- min(nrow(x), n_cells)
+        x[sample(nrow(x), size = n_take), ]
     })
 
+    query_df.l
 }
-rects.l = lapply(query_df.l, rects_from_df)
-head(query_df.l$CTEBV_11)
 
-query_df.l$CTEBV_11$XMin
+rects_from_df <- function(df) {
+    lapply(seq(nrow(df)), function(i) {
+        TiffRect(df$XMin[i], df$XMax[i], df$YMin[i], df$YMax[i])
+    })
+}
+
+find_tiff_file_by_sample <- function(sample_id, image_dir) {
+    sample_pattern <- gsub("_", "", sample_id)
+    files <- dir(image_dir, pattern = sample_pattern, full.names = TRUE)
+    if (!length(files)) {
+        return(NA_character_)
+    }
+    files[1]
+}
+
+#' Title
+#'
+#' @param sampled_cells
+#' @param image_dir
+#' @param fetch_resize_mult
+#' @param max_images_per_sample
+#'
+#' @returns
+#' @export
+#'
+#' @examples
+fetch_representative_tiff_images <- function(
+    sampled_cells,
+    image_dir,
+    fetch_resize_mult = 2,
+    max_images_per_sample = 3
+) {
+    sample_ids <- names(sampled_cells)
+    image_files <- setNames(
+        sapply(sample_ids, find_tiff_file_by_sample, image_dir = image_dir),
+        sample_ids
+    )
+
+    image_res <- lapply(sample_ids, function(sample_id) {
+        sample_df <- sampled_cells[[sample_id]]
+        img_file <- image_files[[sample_id]]
+
+        if (is.na(img_file) || !nrow(sample_df)) {
+            return(list())
+        }
+
+        rects <- rects_from_df(sample_df)
+        rects <- rects[seq_len(min(length(rects), max_images_per_sample))]
+
+        lapply(rects, function(r) {
+            r_fetch <- r %>% rect_resize_mult(fetch_resize_mult)
+            img_res <- fetchTiffData.rgb(img_file, r_fetch)
+            img_res@plots$rgb = img_res@plots$rgb %>% rect_annotate(., r, color = "yellow")
+            img_res
+        })
+    })
+    names(image_res) <- sample_ids
+
+    image_res
+}
+
+# Example usage
+query_df.l <- select_representative_cells(
+    cell_df,
+    marker_col = "Opal520Classification",
+    marker_value = 1,
+    n_cells = 9,
+    seed = 123
+)
 
 # tiff image paths
 image_dir = "Z:/FUSION DATA/AshleyVolaric/RNAScopeRound1/"
-image_files = sapply(names(query_df.l), function(sample_id){
-    dir(image_dir, pattern = gsub("_", "", sample_id), full.names = TRUE)
-}) %>% as.list
+tiff_sample <- fetch_representative_tiff_images(
+    sampled_cells = query_df.l,
+    image_dir = image_dir,
+    fetch_resize_mult = 2,
+    max_images_per_sample = 3
+)
 
-img_f = image_files$CTEBV_11
-rects = rects.l$CTEBV_11
-
-r = rects[[1]]
-r_fetch = r %>% rect_resize_mult(2)
-img_res = fetchTiffData(img_f, r_fetch)
-# undebug(fetchTiffData.rgb)
-img_res = fetchTiffData.rgb(img_f, r_fetch)
-img_res@plots$normalized
-rect_annotate(img_res@plots$normalized, r)
-img_res@plots$normalized %>% rect_annotate(., r)
-
+# Example plot retrieval
+head(query_df.l$CTEBV_11)
+tiff_sample$CTEBV_11[[1]]
+p = plot(tiff_sample$CTEBV_11[[1]])
+class(p)
+p + coord_fixed()
 #
 # p = img_res@plots$normalized
 # rect = r
