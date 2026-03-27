@@ -8,12 +8,12 @@ load_cell_source_files()
 }
 \value{
 A data frame with all cell source file paths, sample identifiers,
-  assay grouping, and (for cohort samples) clinical metadata.
+assay grouping, and (for cohort samples) clinical metadata.
 }
 \description{
 Discovers per-sample cell data CSVs written by
-\code{\link{write_package_data_rnascope_data}} and assembles them into a
+\code{\link[=write_package_data_rnascope_data]{write_package_data_rnascope_data()}} and assembles them into a
 single data frame. Cohort samples are merged with clinical metadata from
-\code{\link{load_meta_data}}; control samples have their identifiers
+\code{\link[=load_meta_data]{load_meta_data()}}; control samples have their identifiers
 standardized.
 }

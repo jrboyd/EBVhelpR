@@ -20,4 +20,11 @@ Imports:
     magrittr,
     openxlsx,
     readr,
-    tidyr
+    tidyr,
+    tibble,
+    rlang,
+    lifecycle,
+    cli,
+    glue,
+    withr
+Roxygen: list(markdown = TRUE)

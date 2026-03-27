@@ -33,7 +33,7 @@
     stop("Expected column `Image Tag` was not found in phenocycler summaries.", call. = FALSE)
   }
 
-  dt.cell_pellet = dt %>% filter(grepl("CellPelletSlide", `Image Tag`))
+  dt.cell_pellet = dt %>% dplyr::filter(grepl("CellPelletSlide", `Image Tag`))
 
   str_last = function(x){
       sapply(strsplit(sub("\\..+", "", x), "_"), function(xx){xx[length(xx)]})
@@ -45,7 +45,7 @@
   ))
   dt.cell_pellet$Sample
 
-  dt.main = dt %>% filter(!grepl("CellPelletSlide", `Image Tag`))
+  dt.main = dt %>% dplyr::filter(!grepl("CellPelletSlide", `Image Tag`))
 
   dt.main <- dt.main |>
     dplyr::mutate(Sample = sub("\\..+", "", .data$`Image Tag`)) |>
@@ -68,7 +68,7 @@
 load_phenocycler_summary_files <- function(data_dir = NULL) {
   pcycler_dt <- .find_and_load_phenocycler_summary_files(data_dir = data_dir)
   meta_df <- load_meta_data()
-  meta_df = meta_df %>% mutate(SampleStripped = gsub("_", "", sample_id))
+  meta_df = meta_df %>% dplyr::mutate(SampleStripped = gsub("_", "", sample_id))
 
   s2s <- meta_df$sample_id
   names(s2s) <- meta_df$SampleStripped

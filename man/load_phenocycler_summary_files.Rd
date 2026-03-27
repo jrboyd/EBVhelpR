@@ -7,13 +7,13 @@
 load_phenocycler_summary_files(data_dir = NULL)
 }
 \arguments{
-\item{data_dir}{Optional directory containing source summary files. If `NULL`,
-the package resolver checks `EBVHELPER_DATA_DIR` and known default paths.}
+\item{data_dir}{Optional directory containing source summary files. If \code{NULL},
+the package resolver checks \code{EBVHELPER_DATA_DIR} and known default paths.}
 }
 \value{
 A data frame with harmonized identifiers and EBV status annotation.
 }
 \description{
 Loads phenocycler summary data and metadata, maps sample identifiers, and
-appends `EBER_status` annotation.
+appends \code{EBER_status} annotation.
 }

@@ -7,12 +7,12 @@
 .find_and_load_rnascope_summary_files(data_dir = NULL)
 }
 \arguments{
-\item{data_dir}{Optional directory containing source summary files. If `NULL`,
-the package resolver checks `EBVHELPER_DATA_DIR` and known default paths.}
+\item{data_dir}{Optional directory containing source summary files. If \code{NULL},
+the package resolver checks \code{EBVHELPER_DATA_DIR} and known default paths.}
 }
 \value{
-A data frame with one row per record and a `source` column indicating
-  the assay source.
+A data frame with one row per record and a \code{source} column indicating
+the assay source.
 }
 \description{
 Reads RNAscope coexpression summary files from the configured data directory

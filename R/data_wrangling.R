@@ -2,11 +2,11 @@
   if(grepl("PhenocyclerReAnalysis_102025", files)){
     group = "Phenocycler"
   }else{
-    group = paste0("RNAScope_", ifelse(grepl("RNAScopeIF", files), "3plex+IF", "4plex"))  
+    group = paste0("RNAScope_", ifelse(grepl("RNAScopeIF", files), "3plex+IF", "4plex"))
   }
   message("group is ", group)
   group
-  
+
 }
 
 
@@ -18,19 +18,19 @@
 #' @examples
 write_all_package_data = function(){
   data_dir = get_original_cell_data_dir()
-  
+
   rscop_object_files = dir(data_dir, pattern = "ObjectData_Clean", full.names = TRUE)
   rscop_object_files = rscop_object_files[!grepl("Sara", rscop_object_files)]
   pheno_object_files = dir(file.path(data_dir, "PhenocyclerReAnalysis_102025"), pattern = "Total_Object_Results.+csv$", recursive = TRUE, full.names = TRUE)
-  
+
   for(file in rscop_object_files){
     write_package_data_for_file(file)
   }
-  
+
   for(file in pheno_object_files){
-    write_package_data_for_file(file)  
-  }  
-  
+    write_package_data_for_file(file)
+  }
+
 }
 
 
@@ -50,20 +50,20 @@ write_package_data_for_file <- function(file) {
   f_group <- .group_image_files(file)
   out_dir <- file.path(get_wrangled_cell_data_dir(), f_group)
   dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
-  
+
   out_meta_file <- file.path(out_dir, paste0("metadata_", basename(file)))
   if (file.exists(out_meta_file)) {
     message("metadata file already exists, skipping: ", out_meta_file)
     return(invisible(out_meta_file))
   }
-  
+
   message("reading input file ", file)
   obj_dat <- read.csv(file)
-  
+
   single_tons <- vapply(obj_dat, function(x) length(unique(x)) == 1L, logical(1))
   obj_singletons <- unique(obj_dat[, single_tons, drop = FALSE])
   obj_dat <- obj_dat[, !single_tons, drop = FALSE]
-  
+
   possible_image_loc_vars = c(
     "ImageLocation",
     "Image.Location"
@@ -79,10 +79,10 @@ write_package_data_for_file <- function(file) {
     message(paste(colnames(obj_dat), collapse = "\n"))
     stop("Could not determine image location variable")
   }
-  
+
   obj_dat.by_image <- split(obj_dat, obj_dat$ImageLocation)
   obj_images <- names(obj_dat.by_image)
-  
+
   if (basename(file) == "RNAScope_CellPellet_ObjectData_Cleaned_2026-01-12.csv") {
     str_extract <- function(x, delim = "_") {
       vapply(strsplit(x, delim), function(parts) {
@@ -92,21 +92,21 @@ write_package_data_for_file <- function(file) {
   } else {
     str_extract <- function(x) x
   }
-  
+
   obj_names <- gsub("\\\\", "/", obj_images)
   obj_names <- basename(obj_names)
   obj_names <- sub("\\..+", "", obj_names)
   obj_names <- str_extract(obj_names)
-  
+
   img_meta_df <- data.frame(image_name = obj_names, image = obj_images, stringsAsFactors = FALSE)
   for (col in colnames(obj_singletons)) {
     img_meta_df[[col]] <- obj_singletons[[col]]
   }
   img_meta_df[["source_file"]] <- file
-  
+
   names(obj_names) <- obj_images
   names(obj_dat.by_image) <- obj_names[names(obj_dat.by_image)]
-  
+
   for (name in img_meta_df$image_name) {
     message("writing ", name)
     obj_dat.sel <- obj_dat.by_image[[name]]
@@ -114,7 +114,89 @@ write_package_data_for_file <- function(file) {
     obj_dat.sel$image_name <- name
     write.csv(obj_dat.sel, file.path(out_dir, paste0(name, ".cell_data.csv")))
   }
-  
+
   write.csv(img_meta_df, out_meta_file)
   invisible(out_meta_file)
+}
+
+.get_example_images_df = function(){
+    f = system.file(package = "EBVhelpR", "extdata/images_on_vacc.csv", mustWork = TRUE)
+    tiff_df = read.csv(f)
+    tiff_df$name = NULL
+    tiff_df$tiff_location = "EXAMPLE_ONLY"
+    tiff_df
+}
+
+get_tiff_file_path_df = function(){
+    win_dir = "Z:/FUSION DATA/AshleyVolaric"
+    lin_dir = "/netfiles/volaric_research/DLBCL_EBV_detection/image_files"
+    tiff_dir = win_dir
+    if(!dir.exists(tiff_dir)){
+        tiff_dir = lin_dir
+    }
+    if(!dir.exists(tiff_dir)){
+        warning("Could not locate TIFF root directory. Returning example tiffs with fake paths.")
+        return(.get_example_images_df())
+    }
+    dir_names = dir(tiff_dir)
+    stopifnot(all(.get_valid_project_names() %in% dir_names))
+    dir_names = .get_valid_project_names()
+    names(dir_names) = dir_names
+    tiff_files.by_project = lapply(dir_names, function(d){
+        files = dir(file.path(tiff_dir, d), recursive = TRUE, pattern = "tiff?$", full.names = TRUE)
+        data.frame(tiff_file = files)
+    })
+    tiff_df = bind_rows(tiff_files.by_project, .id = "assay")
+
+    tiff_df = tiff_df %>% mutate(name = basename(tiff_file))
+    tiff_df = tiff_df %>%
+        mutate(name = sub("\\..+", "", name)) %>%
+        mutate(name = sub("^[0-9]{3}_", "", name)) %>%
+        mutate(name = sub("_ ?croo?p?ped$", "", name)) %>%
+        mutate(name = gsub("-", "_", name))
+
+    tiff_df = tiff_df %>%
+        mutate(name = ifelse(
+            grepl("D_EB.+D_EB", name),
+            sub("_D", " D", name),
+            name
+        ))
+    tiff_df = tiff_df %>%
+        mutate(name = ifelse(
+            grepl("CTEBV.+CTEBV", name),
+            sub("_CTEBV", " CTEBV", name),
+            name
+        ))
+
+    tiff_df = tiff_df %>% group_by(assay, tiff_file) %>% reframe(name = strsplit(name, " ")[[1]])
+    tiff_df = tiff_df %>%
+        mutate(name = ifelse(
+            grepl("CTEBV[0-9]", name),
+            sub("CTEBV", "CTEBV_", name),
+            name
+        ))
+    .cp_name = function(x){
+        x = sub("_2$", "", x)
+        x = sub("Chiung", "Chung", x)
+        cells = sapply(strsplit(x, "_"), function(x)x[length(x)])
+        is_control = grepl("NegCTL", x) | grepl("Control", x)
+        x[is_control]
+        x[!is_control]
+        control_group = ifelse(is_control, "NegCTL", "PosCTL")
+        paste(cells, control_group, sep = '_')
+    }
+    tiff_df = tiff_df %>%
+        mutate(name = ifelse(
+            grepl("CellPellet", name),
+            .cp_name(name),
+            name
+        ))
+
+    tiff_df = tiff_df %>%
+        mutate(name = sub("2468_", "", name)) %>%
+        mutate(name = sub("_Rescanned_Cropped", "", name))
+
+    tiff_df$sample_id = tiff_df$name
+    tiff_df$name = NULL
+    tiff_df
 }
