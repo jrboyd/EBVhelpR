@@ -1,3 +1,16 @@
+#' Supported Assay Type Constants
+#'
+#' Named list of supported assay type identifiers used by data loaders,
+#' query constructors, and filtering helpers throughout the package.
+#'
+#' @format A named list with three character elements:
+#' \describe{
+#'   \item{phenocycler}{`"Phenocycler"`}
+#'   \item{rnascope_4plex}{`"RNAScope_4plex"`}
+#'   \item{rnascope_3plex+IF}{`"RNAScope_3plex+IF"`}
+#' }
+#' @examples
+#' EBV_ASSAY_TYPES$rnascope_4plex
 #' @export
 EBV_ASSAY_TYPES = list(
     phenocycler = "Phenocycler",

@@ -10,15 +10,18 @@
 }
 
 
-#' Title
+#' Write All Package Cell Data Files
 #'
-#' @returns Invisibly returns NULL after attempting to write all package data files.
-#' @export
+#' Discovers supported RNAscope and phenocycler object-level CSV files and
+#' writes per-sample package data outputs for each file via
+#' [write_package_data_for_file()].
 #'
+#' @return Invisibly returns `NULL` after attempting to write all package data files.
 #' @examples
 #' \dontrun{
 #' write_all_package_data()
 #' }
+#' @export
 write_all_package_data = function(){
   data_dir = get_original_cell_data_dir()
 
@@ -48,6 +51,10 @@ write_all_package_data = function(){
 #' @param file Path to a combined RNAscope ObjectData CSV file.
 #'
 #' @return Invisibly returns the path to the metadata file written.
+#' @examples
+#' \dontrun{
+#' write_package_data_for_file("/path/to/ObjectData_Clean.csv")
+#' }
 #' @export
 write_package_data_for_file <- function(file) {
   f_group <- .group_image_files(file)
@@ -152,7 +159,7 @@ get_tiff_file_path_df = function(){
         files = dir(file.path(tiff_dir, d), recursive = TRUE, pattern = "tiff?$", full.names = TRUE)
         data.frame(tiff_file = files)
     })
-    tiff_df = bind_rows(tiff_files.by_project, .id = "assay")
+    tiff_df = dplyr::bind_rows(tiff_files.by_project, .id = "assay")
 
     tiff_df = tiff_df %>% dplyr::mutate(name = basename(tiff_file))
     tiff_df = tiff_df %>%
@@ -174,7 +181,7 @@ get_tiff_file_path_df = function(){
             name
         ))
 
-    tiff_df = tiff_df %>% group_by(assay, tiff_file) %>% dplyr::reframe(name = strsplit(name, " ")[[1]])
+    tiff_df = tiff_df %>% dplyr::group_by(assay, tiff_file) %>% dplyr::reframe(name = strsplit(name, " ")[[1]])
     tiff_df = tiff_df %>%
         dplyr::mutate(name = ifelse(
             grepl("CTEBV[0-9]", name),

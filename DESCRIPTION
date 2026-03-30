@@ -1,7 +1,7 @@
 Package: EBVhelpR
 Type: Package
 Title: EBV DLBCL Project Data Help in R
-Version: 0.1.0
+Version: 0.1.1
 Authors@R: c(
     person(
       "Joseph", "Boyd",

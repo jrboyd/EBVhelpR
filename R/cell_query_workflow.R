@@ -31,6 +31,38 @@
     lapply(seq_len(nrow(df)), function(i) {
         TiffPlotR::TiffRect(df$XMin[i], df$XMax[i], df$YMin[i], df$YMax[i])
     })
+  if (!requireNamespace("TiffPlotR", quietly = TRUE)) {
+    stop(
+      "Package `TiffPlotR` is required for TIFF image extraction. Install it first.",
+      call. = FALSE
+    )
+  }
+}
+
+.find_tiff_file_by_sample <- function(object, sample_id) {
+  tiff_df <- get_query_tiff_paths_df(object)
+  sel <- tiff_df[tiff_df$sample_id == sample_id, , drop = FALSE]
+
+  if (!nrow(sel)) {
+    stop("No matching TIFF found for sample_id: ", sample_id, call. = FALSE)
+  }
+
+  if (nrow(sel) > 1) {
+    warning(
+      "Multiple TIFF files found for sample_id ",
+      sample_id,
+      "; using the first one.",
+      call. = FALSE
+    )
+  }
+
+  sel$tiff_file[[1]]
+}
+
+.rects_from_df <- function(df) {
+  lapply(seq_len(nrow(df)), function(i) {
+    TiffPlotR::TiffRect(df$XMin[i], df$XMax[i], df$YMin[i], df$YMax[i])
+  })
 }
 
 #' Load Selected Cell-Level Data For a CellQuery

@@ -8,30 +8,11 @@ library(EBVhelpR)
 
 EBVhelpR::write_all_package_data()
 
-undebug(load_phenocycler_summary_files)
-pcycler_df = EBVhelpR::load_phenocycler_summary_files()
-pcycler_df$source %>% table
-pcycler_df$SampleID %>% table
-pcycler_df$combo %>% table
-pcycler_df$EBER_status %>% table
-
-
-rscope_df = EBVhelpR::load_rnascope_summary_files()
-rscope_df$source %>% table
-rscope_df$SampleID %>% table
-rscope_df$combo %>% table
-rscope_df$EBER_status %>% table
-
-pcycler_df$Sample
-rscope_df$SampleID
-
-
-
 
 theme_set(theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1)))
 ggplot(rscope_df, aes(x = combo, y = Positive_Percent)) +
-  geom_boxplot() +
-  facet_wrap(~source)
+    geom_boxplot() +
+    facet_wrap(~source)
 
 # view example cells
 # debug(load_cell_source_files)
@@ -77,92 +58,21 @@ ggplot(class_fraction, aes(x = sample_id, fill = name, y = fraction)) +
 
 library(TiffPlotR)
 
-select_representative_cells <- function(
-    cell_df,
-    marker_col = "Opal520Classification",
-    marker_value = 1,
-    n_cells = 9,
-    sample_col = "sample_id",
-    seed = 1
-) {
-    stopifnot(marker_col %in% colnames(cell_df))
-    stopifnot(sample_col %in% colnames(cell_df))
+cq = CellQuery()
+cq@summary_df
 
-    query_df <- cell_df %>% filter(.data[[marker_col]] == marker_value)
-    query_df.l <- split(query_df, query_df[[sample_col]])
+set.seed(0)
+sel_ids = cq@summary_df$sample_id %>% sample(4) %>% unique
 
-    set.seed(seed)
-    query_df.l <- lapply(query_df.l, function(x) {
-        if (!nrow(x)) {
-            return(x)
-        }
-        n_take <- min(nrow(x), n_cells)
-        x[sample(nrow(x), size = n_take), ]
-    })
+# debug(set_selected_sample_ids)
+cq = set_selected_sample_ids(cq, sel_ids)
 
-    query_df.l
-}
+cell_df = get_query_cell_files_df(cq)
+cell_df$sample_id %>% table
+cell_df %>% head
 
-rects_from_df <- function(df) {
-    lapply(seq(nrow(df)), function(i) {
-        TiffRect(df$XMin[i], df$XMax[i], df$YMin[i], df$YMax[i])
-    })
-}
-
-find_tiff_file_by_sample <- function(sample_id, image_dir) {
-    sample_pattern <- gsub("_", "", sample_id)
-    files <- dir(image_dir, pattern = sample_pattern, full.names = TRUE)
-    if (!length(files)) {
-        return(NA_character_)
-    }
-    files[1]
-}
-
-#' Title
-#'
-#' @param sampled_cells
-#' @param image_dir
-#' @param fetch_resize_mult
-#' @param max_images_per_sample
-#'
-#' @returns
-#' @export
-#'
-#' @examples
-fetch_representative_tiff_images <- function(
-    sampled_cells,
-    image_dir,
-    fetch_resize_mult = 2,
-    max_images_per_sample = 3
-) {
-    sample_ids <- names(sampled_cells)
-    image_files <- setNames(
-        sapply(sample_ids, find_tiff_file_by_sample, image_dir = image_dir),
-        sample_ids
-    )
-
-    image_res <- lapply(sample_ids, function(sample_id) {
-        sample_df <- sampled_cells[[sample_id]]
-        img_file <- image_files[[sample_id]]
-
-        if (is.na(img_file) || !nrow(sample_df)) {
-            return(list())
-        }
-
-        rects <- rects_from_df(sample_df)
-        rects <- rects[seq_len(min(length(rects), max_images_per_sample))]
-
-        lapply(rects, function(r) {
-            r_fetch <- r %>% rect_resize_mult(fetch_resize_mult)
-            img_res <- fetchTiffData.rgb(img_file, r_fetch)
-            img_res@plots$rgb = img_res@plots$rgb %>% rect_annotate(., r, color = "yellow")
-            img_res
-        })
-    })
-    names(image_res) <- sample_ids
-
-    image_res
-}
+cell_df = load_query_cell_data(cq)
+# sampled_cells = select_representative_cells(cell_df)
 
 # Example usage
 query_df.l <- select_representative_cells(
@@ -173,14 +83,17 @@ query_df.l <- select_representative_cells(
     seed = 123
 )
 
-# tiff image paths
-image_dir = "Z:/FUSION DATA/AshleyVolaric/RNAScopeRound1/"
+lapply(query_df.l, nrow)
+
+# debug(fetch_representative_tiff_images)
 tiff_sample <- fetch_representative_tiff_images(
+    object = cq,
     sampled_cells = query_df.l,
-    image_dir = image_dir,
     fetch_resize_mult = 2,
     max_images_per_sample = 3
 )
+
+tiff_sample$D_EB_20
 
 # Example plot retrieval
 head(query_df.l$CTEBV_11)

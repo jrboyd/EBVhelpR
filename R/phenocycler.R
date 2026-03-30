@@ -64,6 +64,10 @@
 #'   the package resolver checks `EBVHELPER_DATA_DIR` and known default paths.
 #'
 #' @return A data frame with harmonized identifiers and EBV status annotation.
+#' @examples
+#' \dontrun{
+#' pcycler_df <- load_phenocycler_summary_files()
+#' }
 #' @export
 load_phenocycler_summary_files <- function(data_dir = NULL) {
   pcycler_dt <- .find_and_load_phenocycler_summary_files(data_dir = data_dir)

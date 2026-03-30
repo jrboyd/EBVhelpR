@@ -58,6 +58,10 @@
 #'   the package resolver checks `EBVHELPER_DATA_DIR` and known default paths.
 #'
 #' @return A data frame with harmonized identifiers and EBV status annotation.
+#' @examples
+#' \dontrun{
+#' rscope_df <- load_rnascope_summary_files()
+#' }
 #' @export
 load_rnascope_summary_files <- function(data_dir = NULL) {
   rscope_dt <- .find_and_load_rnascope_summary_files(data_dir = data_dir)
@@ -105,6 +109,10 @@ load_rnascope_summary_files <- function(data_dir = NULL) {
 #'
 #' @return A data frame with all cell source file paths, sample identifiers,
 #'   assay grouping, and (for cohort samples) clinical metadata.
+#' @examples
+#' \dontrun{
+#' cell_df <- load_cell_source_files()
+#' }
 #' @export
 load_cell_source_files <- function() {
   pkg_data_dir <- get_wrangled_cell_data_dir()
@@ -182,7 +190,6 @@ load_cell_source_files <- function() {
 
   final_df = dplyr::bind_rows(cell_df.by_type$cohort, cell_df.by_type$control)
   final_df$name = NULL
-  final_df$project_name <- final_df$assay
-  final_df$assay <- project_name_to_assay[final_df$project_name]
+  final_df$project_name <- assay_to_project_name[final_df$assay]
   final_df
 }
