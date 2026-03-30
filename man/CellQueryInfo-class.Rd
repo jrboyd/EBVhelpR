@@ -12,7 +12,7 @@ S4 class for storing data used during cell-query image retrieval workflows.
 \describe{
 \item{\code{all_cell_files_df}}{Data frame of all available cell files.}
 
-\item{\code{selected_cell_files_df}}{Data frame of cell files selected for a query.}
+\item{\code{selected_sample_ids}}{Character vector of selected sample ids.}
 
 \item{\code{tiff_paths_df}}{Data frame mapping samples to TIFF image paths.}
 

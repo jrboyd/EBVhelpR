@@ -152,7 +152,7 @@ get_tiff_file_path_df = function(){
         files = dir(file.path(tiff_dir, d), recursive = TRUE, pattern = "tiff?$", full.names = TRUE)
         data.frame(tiff_file = files)
     })
-    tiff_df = bind_rows(tiff_files.by_project, .id = "assay")
+    tiff_df = dplyr::bind_rows(tiff_files.by_project, .id = "assay")
 
     tiff_df = tiff_df %>% dplyr::mutate(name = basename(tiff_file))
     tiff_df = tiff_df %>%
@@ -174,7 +174,7 @@ get_tiff_file_path_df = function(){
             name
         ))
 
-    tiff_df = tiff_df %>% group_by(assay, tiff_file) %>% dplyr::reframe(name = strsplit(name, " ")[[1]])
+    tiff_df = tiff_df %>% dplyr::group_by(assay, tiff_file) %>% dplyr::reframe(name = strsplit(name, " ")[[1]])
     tiff_df = tiff_df %>%
         dplyr::mutate(name = ifelse(
             grepl("CTEBV[0-9]", name),
