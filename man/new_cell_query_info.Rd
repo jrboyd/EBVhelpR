@@ -4,22 +4,10 @@
 \alias{new_cell_query_info}
 \title{Construct a CellQueryInfo Object}
 \usage{
-new_cell_query_info(
-  assay_type = NULL,
-  summary_df = NULL,
-  all_cell_files_df = NULL,
-  selected_cell_files_df = all_cell_files_df,
-  tiff_paths_df = NULL
-)
+new_cell_query_info(assay_type = NULL)
 }
 \arguments{
-\item{assay_type}{Character scalar indicating assay type.}
-
 \item{all_cell_files_df}{Data frame of all available cell files.}
-
-\item{selected_cell_files_df}{Data frame of selected cell files.}
-
-\item{tiff_paths_df}{Data frame with TIFF path information.}
 }
 \value{
 A validated \linkS4class{CellQueryInfo} object.
@@ -28,6 +16,7 @@ A validated \linkS4class{CellQueryInfo} object.
 Construct a CellQueryInfo Object
 }
 \examples{
+new_cell_query_info()
 assay_type = EBV_ASSAY_TYPES$phenocycler
 all_cell_files_df = NULL
 selected_cell_files_df = all_cell_files_df

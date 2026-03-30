@@ -29,25 +29,19 @@ methods::setClass(
 #' Construct a CellQueryInfo Object
 #'
 #' @param all_cell_files_df Data frame of all available cell files.
-#' @param selected_cell_files_df Data frame of selected cell files.
-#' @param tiff_paths_df Data frame with TIFF path information.
-#' @param assay_type Character scalar indicating assay type.
 #'
 #' @return A validated [CellQueryInfo-class] object.
 #' @export
 #'
 #' @examples
+#' new_cell_query_info()
 #' assay_type = EBV_ASSAY_TYPES$phenocycler
 #' all_cell_files_df = NULL
 #' selected_cell_files_df = all_cell_files_df
 #' tiff_paths_df = NULL
 #' get_tiff_file_path_df = EBVhelpR:::get_tiff_file_path_df
 new_cell_query_info <- function(
-        assay_type = NULL,
-        summary_df = NULL,
-        all_cell_files_df = NULL,
-        selected_cell_files_df = all_cell_files_df,
-        tiff_paths_df = NULL
+        assay_type = NULL
 ) {
     if(is.null(assay_type)){
        assay_type = EBV_ASSAY_TYPES$rnascope_4plex
@@ -57,22 +51,18 @@ new_cell_query_info <- function(
     stopifnot(assay_type %in% EBV_ASSAY_TYPES)
     if(assay_type == EBV_ASSAY_TYPES$phenocycler){
         summary_df = load_phenocycler_summary_files()
-        all_cell_files_df = load_cell_source_files()
-        all_cell_files_df = dplyr::filter(all_cell_files_df, assay == assay_type)
-        selected_cell_files_df = all_cell_files_df
-        tiff_info = get_tiff_file_path_df()
-        tiff_info = dplyr::filter(tiff_info, assay == assay_type)
     }else if(assay_type %in% c(EBV_ASSAY_TYPES$rnascope_4plex, EBV_ASSAY_TYPES$`rnascope_3plex+IF`)){
         summary_df = load_rnascope_summary_files()
         summary_df = dplyr::filter(summary_df, assay == assay_type)
-        all_cell_files_df = load_cell_source_files()
-        all_cell_files_df = dplyr::filter(all_cell_files_df, assay == assay_type)
-        selected_cell_files_df = all_cell_files_df
-        tiff_info = get_tiff_file_path_df()
-        tiff_info = dplyr::filter(tiff_info, assay == assay_type)
     }else{
         stop("Unrecognized assay type, see EBV_ASSAY_TYPES")
     }
+    all_cell_files_df = load_cell_source_files()
+    all_cell_files_df = dplyr::filter(all_cell_files_df, assay == assay_type)
+    selected_cell_files_df = all_cell_files_df
+    tiff_paths_df = get_tiff_file_path_df()
+    tiff_paths_df = dplyr::filter(tiff_paths_df, assay == assay_type)
+
     obj <- methods::new(
         "CellQueryInfo",
         summary_df = summary_df,
