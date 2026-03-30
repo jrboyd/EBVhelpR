@@ -41,18 +41,18 @@ methods::setClass(
 
 #' Construct a CellQueryInfo Object
 #'
-#' @param all_cell_files_df Data frame of all available cell files.
+#' Builds assay-specific summary, cell file, and TIFF path tables; keeps the
+#' intersection of available sample ids across those sources; and initializes
+#' selection to all remaining sample ids.
+#'
+#' @param assay_type Character scalar assay type. If `NULL`, defaults to
+#'   `EBV_ASSAY_TYPES$rnascope_4plex`.
 #'
 #' @return A validated [CellQueryInfo-class] object.
-#' @export
-#'
 #' @examples
-#' CellQuery()
-#' assay_type = EBV_ASSAY_TYPES$phenocycler
-#' all_cell_files_df = NULL
-#' selected_sample_ids = character(0)
-#' tiff_paths_df = NULL
-#' get_tiff_file_path_df = EBVhelpR:::get_tiff_file_path_df
+#' q <- CellQuery()
+#' q2 <- CellQuery(EBV_ASSAY_TYPES$phenocycler)
+#' @export
 CellQuery <- function(
         assay_type = NULL
 ) {
@@ -150,6 +150,9 @@ CellQuery <- function(
 #' @param selected_only Logical; if `TRUE`, return only selected samples.
 #'
 #' @return Data frame of summary rows.
+#' @examples
+#' q <- CellQuery()
+#' get_query_summary_df(q)
 #' @export
 get_query_summary_df <- function(object, selected_only = TRUE) {
     stopifnot(methods::is(object, "CellQueryInfo"))
@@ -165,6 +168,9 @@ get_query_summary_df <- function(object, selected_only = TRUE) {
 #' @param selected_only Logical; if `TRUE`, return only selected samples.
 #'
 #' @return Data frame of cell file rows.
+#' @examples
+#' q <- CellQuery()
+#' get_query_cell_files_df(q)
 #' @export
 get_query_cell_files_df <- function(object, selected_only = TRUE) {
     stopifnot(methods::is(object, "CellQueryInfo"))
@@ -180,6 +186,9 @@ get_query_cell_files_df <- function(object, selected_only = TRUE) {
 #' @param selected_only Logical; if `TRUE`, return only selected samples.
 #'
 #' @return Data frame of TIFF path rows.
+#' @examples
+#' q <- CellQuery()
+#' get_query_tiff_paths_df(q)
 #' @export
 get_query_tiff_paths_df <- function(object, selected_only = TRUE) {
     stopifnot(methods::is(object, "CellQueryInfo"))
@@ -195,6 +204,9 @@ get_query_tiff_paths_df <- function(object, selected_only = TRUE) {
 #' @param selected_sample_ids Character vector of selected sample ids.
 #'
 #' @return Updated [CellQueryInfo-class] object.
+#' @examples
+#' q <- CellQuery()
+#' q <- set_selected_sample_ids(q, head(get_query_summary_df(q)$sample_id, 2))
 #' @export
 set_selected_sample_ids <- function(object, selected_sample_ids) {
     stopifnot(methods::is(object, "CellQueryInfo"))
@@ -245,6 +257,17 @@ set_selected_sample_ids <- function(object, selected_sample_ids) {
     length(unique(tiff_df[[tiff_col]][sel & has_path]))
 }
 
+#' Display a CellQueryInfo Summary
+#'
+#' Prints assay name and key counts for total versus selected samples, cells,
+#' and available TIFF files.
+#'
+#' @param object A [CellQueryInfo-class] object.
+#'
+#' @return Invisibly returns `object`.
+#' @examples
+#' q <- CellQuery()
+#' show(q)
 #' @export
 methods::setMethod("show", "CellQueryInfo", function(object) {
     all_df <- get_query_cell_files_df(object, selected_only = FALSE)

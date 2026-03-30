@@ -17,3 +17,7 @@ Updated \linkS4class{CellQueryInfo} object.
 \description{
 Set Selected Sample IDs
 }
+\examples{
+q <- CellQuery()
+q <- set_selected_sample_ids(q, head(get_query_summary_df(q)$sample_id, 2))
+}

@@ -7,19 +7,18 @@
 CellQuery(assay_type = NULL)
 }
 \arguments{
-\item{all_cell_files_df}{Data frame of all available cell files.}
+\item{assay_type}{Character scalar assay type. If \code{NULL}, defaults to
+\code{EBV_ASSAY_TYPES$rnascope_4plex}.}
 }
 \value{
 A validated \linkS4class{CellQueryInfo} object.
 }
 \description{
-Construct a CellQueryInfo Object
+Builds assay-specific summary, cell file, and TIFF path tables; keeps the
+intersection of available sample ids across those sources; and initializes
+selection to all remaining sample ids.
 }
 \examples{
-CellQuery()
-assay_type = EBV_ASSAY_TYPES$phenocycler
-all_cell_files_df = NULL
-selected_sample_ids = character(0)
-tiff_paths_df = NULL
-get_tiff_file_path_df = EBVhelpR:::get_tiff_file_path_df
+q <- CellQuery()
+q2 <- CellQuery(EBV_ASSAY_TYPES$phenocycler)
 }

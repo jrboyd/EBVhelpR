@@ -2,7 +2,7 @@
 % Please edit documentation in R/io_utils.R
 \name{get_wrangled_cell_data_dir}
 \alias{get_wrangled_cell_data_dir}
-\title{Title}
+\title{Get Wrangled Cell Data Directory}
 \usage{
 get_wrangled_cell_data_dir()
 }
@@ -10,7 +10,8 @@ get_wrangled_cell_data_dir()
 Character scalar path to the package wrangled cell data directory.
 }
 \description{
-Title
+Returns the directory where processed package-ready cell data files are
+written. This path is derived from \code{\link[=get_original_cell_data_dir]{get_original_cell_data_dir()}}.
 }
 \examples{
 \dontrun{

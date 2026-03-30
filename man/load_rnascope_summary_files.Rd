@@ -17,3 +17,8 @@ A data frame with harmonized identifiers and EBV status annotation.
 Loads RNAscope summary data and metadata, maps sample_id identifiers, and appends
 \code{EBER_status} annotation.
 }
+\examples{
+\dontrun{
+rscope_df <- load_rnascope_summary_files()
+}
+}

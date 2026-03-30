@@ -17,3 +17,7 @@ Data frame of TIFF path rows.
 \description{
 Get TIFF Path Rows From CellQueryInfo
 }
+\examples{
+q <- CellQuery()
+get_query_tiff_paths_df(q)
+}

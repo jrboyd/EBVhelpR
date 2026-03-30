@@ -17,3 +17,8 @@ single data frame. Cohort samples are merged with clinical metadata from
 \code{\link[=load_meta_data]{load_meta_data()}}; control samples have their identifiers
 standardized.
 }
+\examples{
+\dontrun{
+cell_df <- load_cell_source_files()
+}
+}

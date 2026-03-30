@@ -13,3 +13,8 @@ A data frame with columns \code{sample_id} and \code{EBER_status}.
 Reads the packaged EBER annotation file, standardizes sample_id naming, and
 expands composite entries into one row per sample_id.
 }
+\examples{
+\dontrun{
+meta_df <- load_meta_data()
+}
+}

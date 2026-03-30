@@ -124,7 +124,7 @@ cq@summary_df
 set.seed(0)
 sel_ids = cq@summary_df$sample_id %>% sample(10) %>% unique
 
-debug(set_selected_sample_ids)
+# debug(set_selected_sample_ids)
 set_selected_sample_ids(cq, sel_ids)
 
 select_sample_ids = function(cq){

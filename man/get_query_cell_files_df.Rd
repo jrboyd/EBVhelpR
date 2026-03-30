@@ -17,3 +17,7 @@ Data frame of cell file rows.
 \description{
 Get Cell File Rows From CellQueryInfo
 }
+\examples{
+q <- CellQuery()
+get_query_cell_files_df(q)
+}

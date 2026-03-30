@@ -2,7 +2,7 @@
 % Please edit documentation in R/io_utils.R
 \name{get_original_cell_data_dir}
 \alias{get_original_cell_data_dir}
-\title{Title}
+\title{Get Original Cell Data Directory}
 \usage{
 get_original_cell_data_dir()
 }
@@ -10,7 +10,8 @@ get_original_cell_data_dir()
 Character scalar path to the discovered original cell data directory.
 }
 \description{
-Title
+Resolves the root directory containing raw cell data inputs by checking
+\code{EBVHELPER_DATA_DIR} first, then known default Windows and Linux paths.
 }
 \examples{
 \dontrun{

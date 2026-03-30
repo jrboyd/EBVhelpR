@@ -17,3 +17,7 @@ Data frame of summary rows.
 \description{
 Get Summary Rows From CellQueryInfo
 }
+\examples{
+q <- CellQuery()
+get_query_summary_df(q)
+}

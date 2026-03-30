@@ -18,3 +18,8 @@ per image sample, writing them to the package data directory alongside a
 metadata summary file. Run once per input file; exits early if the metadata
 output already exists.
 }
+\examples{
+\dontrun{
+write_package_data_for_file("/path/to/ObjectData_Clean.csv")
+}
+}

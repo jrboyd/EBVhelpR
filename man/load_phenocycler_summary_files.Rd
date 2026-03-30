@@ -17,3 +17,8 @@ A data frame with harmonized identifiers and EBV status annotation.
 Loads phenocycler summary data and metadata, maps sample identifiers, and
 appends \code{EBER_status} annotation.
 }
+\examples{
+\dontrun{
+pcycler_df <- load_phenocycler_summary_files()
+}
+}
