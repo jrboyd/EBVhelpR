@@ -98,7 +98,7 @@ load_rnascope_summary_files <- function(data_dir = NULL) {
 #' Load cell-level source data files
 #'
 #' Discovers per-sample cell data CSVs written by
-#' [write_package_data_rnascope_data()] and assembles them into a
+#' [write_all_package_data()] and assembles them into a
 #' single data frame. Cohort samples are merged with clinical metadata from
 #' [load_meta_data()]; control samples have their identifiers
 #' standardized.

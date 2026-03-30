@@ -35,6 +35,10 @@
 #' expands composite entries into one row per sample_id.
 #'
 #' @return A data frame with columns `sample_id` and `EBER_status`.
+#' @examples
+#' \dontrun{
+#' meta_df <- load_meta_data()
+#' }
 #' @export
 load_meta_data <- function() {
   meta_df <- openxlsx::read.xlsx(.get_status_file())
