@@ -123,7 +123,7 @@ CellQuery <- function(
 }
 
 .get_sample_ids <- function(df) {
-    sample_col <- .resolve_col_name(df, c("sample_id", "SampleID", "Sample", "name"))
+    sample_col = "sample_id"
     if (is.null(sample_col) || !nrow(df)) {
         return(character(0))
     }
@@ -134,10 +134,7 @@ CellQuery <- function(
     if (!nrow(df)) {
         return(df)
     }
-    sample_col <- .resolve_col_name(df, c("sample_id", "SampleID", "Sample", "name"))
-    if (is.null(sample_col)) {
-        return(df)
-    }
+    sample_col = "sample_id"
     if (!length(selected_sample_ids)) {
         return(df[0, , drop = FALSE])
     }
@@ -216,7 +213,7 @@ set_selected_sample_ids <- function(object, selected_sample_ids) {
 }
 
 .count_samples <- function(df) {
-    sample_col <- .resolve_col_name(df, c("sample_id", "SampleID", "Sample", "name"))
+    sample_col = "sample_id"
     if (is.null(sample_col)) {
         return(0L)
     }
