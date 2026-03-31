@@ -185,36 +185,42 @@ methods::setMethod("show", "CellDataStore", function(object) {
   invisible(object)
 })
 
+#' @importFrom dplyr filter
 #' @export
 filter.CellDataStore <- function(.data, ...) {
   .data@selected_df <- dplyr::filter(.data@selected_df, ...)
   .data
 }
 
+#' @importFrom dplyr mutate
 #' @export
 mutate.CellDataStore <- function(.data, ...) {
   .data@selected_df <- dplyr::mutate(.data@selected_df, ...)
   .data
 }
 
+#' @importFrom dplyr select
 #' @export
 select.CellDataStore <- function(.data, ...) {
   .data@selected_df <- dplyr::select(.data@selected_df, ...)
   .data
 }
 
+#' @importFrom dplyr arrange
 #' @export
 arrange.CellDataStore <- function(.data, ...) {
   .data@selected_df <- dplyr::arrange(.data@selected_df, ...)
   .data
 }
 
+#' @importFrom dplyr slice
 #' @export
 slice.CellDataStore <- function(.data, ..., .by = NULL, .preserve = FALSE) {
   .data@selected_df <- dplyr::slice(.data@selected_df, ..., .by = .by, .preserve = .preserve)
   .data
 }
 
+#' @importFrom dplyr distinct
 #' @export
 distinct.CellDataStore <- function(.data, ..., .keep_all = FALSE) {
   .data@selected_df <- dplyr::distinct(.data@selected_df, ..., .keep_all = .keep_all)

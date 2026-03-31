@@ -1,7 +1,7 @@
 Package: EBVhelpR
 Type: Package
 Title: EBV DLBCL Project Data Help in R
-Version: 0.1.1
+Version: 0.1.2
 Authors@R: c(
     person(
       "Joseph", "Boyd",
@@ -22,6 +22,7 @@ Imports:
     readr,
     tidyr,
     tibble,
+    TiffPlotR (>= 0.1.1),
     rlang,
     lifecycle,
     cli,

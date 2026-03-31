@@ -1,5 +1,5 @@
-library(magrittr)
-library(tidyverse)
+# library(magrittr)
+# library(tidyverse)
 library(EBVhelpR)
 
 # Use live package sources in development so newly added functions/classes are available.
@@ -17,17 +17,17 @@ if (!requireNamespace("TiffPlotR", quietly = TRUE)) {
   get(name, envir = ns)
 }
 
-CellQuery <- .get_pkg_fn("CellQuery")
-set_selected_sample_ids <- .get_pkg_fn("set_selected_sample_ids")
-get_query_summary_df <- .get_pkg_fn("get_query_summary_df")
-load_query_cell_data_store <- .get_pkg_fn("load_query_cell_data_store")
-get_full_cell_data <- .get_pkg_fn("get_full_cell_data")
-get_selected_cell_data <- .get_pkg_fn("get_selected_cell_data")
-get_original_cells_per_sample_id <- .get_pkg_fn("get_original_cells_per_sample_id")
-restore_selected_cell_data <- .get_pkg_fn("restore_selected_cell_data")
-replace_full_with_selected_cell_data <- .get_pkg_fn("replace_full_with_selected_cell_data")
-select_representative_cells <- .get_pkg_fn("select_representative_cells")
-fetch_representative_tiff_images <- .get_pkg_fn("fetch_representative_tiff_images")
+# CellQuery <- .get_pkg_fn("CellQuery")
+# set_selected_sample_ids <- .get_pkg_fn("set_selected_sample_ids")
+# get_query_summary_df <- .get_pkg_fn("get_query_summary_df")
+# load_query_cell_data_store <- .get_pkg_fn("load_query_cell_data_store")
+# get_full_cell_data <- .get_pkg_fn("get_full_cell_data")
+# get_selected_cell_data <- .get_pkg_fn("get_selected_cell_data")
+# get_original_cells_per_sample_id <- .get_pkg_fn("get_original_cells_per_sample_id")
+# restore_selected_cell_data <- .get_pkg_fn("restore_selected_cell_data")
+# replace_full_with_selected_cell_data <- .get_pkg_fn("replace_full_with_selected_cell_data")
+# select_representative_cells <- .get_pkg_fn("select_representative_cells")
+# fetch_representative_tiff_images <- .get_pkg_fn("fetch_representative_tiff_images")
 
 # 1) Build a CellQuery object for an assay.
 cq <- CellQuery(assay_type = EBV_ASSAY_TYPES$rnascope_4plex)
@@ -48,8 +48,8 @@ print(orig_counts)
 
 # 4) dplyr verbs operate on selected view only.
 cds <- cds %>%
-  dplyr::filter(Opal520Classification == 1) %>%
-  dplyr::mutate(any_marker = Opal520Classification + Opal620Classification)
+  filter(Opal520Classification == 1) %>%
+  mutate(any_marker = Opal520Classification + Opal620Classification)
 
 cat("Rows after selected filtering:", nrow(get_selected_cell_data(cds)), "\n")
 cat("Rows in full data remain:", nrow(get_full_cell_data(cds)), "\n")
@@ -80,8 +80,28 @@ img_res <- fetch_representative_tiff_images(
   annotate_color = "yellow"
 )
 
-# 8) Plot one representative image if available.
-first_sample <- names(img_res)[1]
-if (length(first_sample) && length(img_res[[first_sample]]) > 0) {
-  print(plot(img_res[[first_sample]][[1]]))
-}
+img_res$CTEBV_11[[2]]
+
+debug(fetch_representative_tiff_images)
+img_res.with_bg <- fetch_representative_tiff_images(
+    object = cq,
+    sampled_cells = reps,
+    fetch_resize_mult = 2,
+    max_images_per_sample = 3,
+    annotate_color = "yellow",
+    cell_data_store = cds
+)
+
+img_res.with_bg$CTEBV_11[[2]]
+
+library(ggplot2)
+
+plots.l = lapply(img_res, function(tiff_s){
+    lapply(tiff_s, function(x){
+        p = x@plots$rgb
+        p + theme_void() + guides(color = "none")
+    })
+})
+plots = unlist(plots.l)
+cowplot::plot_grid(plotlist = plots, ncol = 3)
+

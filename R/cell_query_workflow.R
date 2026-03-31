@@ -27,42 +27,57 @@
     sel$tiff_file[[1]]
 }
 
-.rects_from_df <- function(df) {
-    lapply(seq_len(nrow(df)), function(i) {
-        TiffPlotR::TiffRect(df$XMin[i], df$XMax[i], df$YMin[i], df$YMax[i])
-    })
-  if (!requireNamespace("TiffPlotR", quietly = TRUE)) {
-    stop(
-      "Package `TiffPlotR` is required for TIFF image extraction. Install it first.",
-      call. = FALSE
+
+.rects_from_df <- function(df, rect_names = NULL) {
+    if (!requireNamespace("TiffPlotR", quietly = TRUE)) {
+        stop(
+            "Package `TiffPlotR` is required for TIFF image extraction. Install it first.",
+            call. = FALSE
+        )
+    }
+    if(is.null(rect_names)){
+        rect_names = paste0("r", seq_len(nrow(df)))
+    }
+    stopifnot(length(rect_names) == nrow(df))
+
+    # lapply(seq_len(nrow(df)), function(i) {
+    #     TiffPlotR::TiffRect(df$XMin[i], df$XMax[i], df$YMin[i], df$YMax[i], name = rect_names[i])
+    # })
+    TiffPlotR::TiffRect(df$XMin, df$XMax, df$YMin, df$YMax, name = rect_names)
+
+}
+
+.single_rect_from_row <- function(df, i, rect_name = NULL) {
+    if (is.null(rect_name)) {
+        rect_name <- as.character(i)
+    }
+    TiffPlotR::TiffRect(
+        df$XMin[i],
+        df$XMax[i],
+        df$YMin[i],
+        df$YMax[i],
+        name = rect_name
     )
-  }
 }
 
 .find_tiff_file_by_sample <- function(object, sample_id) {
-  tiff_df <- get_query_tiff_paths_df(object)
-  sel <- tiff_df[tiff_df$sample_id == sample_id, , drop = FALSE]
+    tiff_df <- get_query_tiff_paths_df(object)
+    sel <- tiff_df[tiff_df$sample_id == sample_id, , drop = FALSE]
 
-  if (!nrow(sel)) {
-    stop("No matching TIFF found for sample_id: ", sample_id, call. = FALSE)
-  }
+    if (!nrow(sel)) {
+        stop("No matching TIFF found for sample_id: ", sample_id, call. = FALSE)
+    }
 
-  if (nrow(sel) > 1) {
-    warning(
-      "Multiple TIFF files found for sample_id ",
-      sample_id,
-      "; using the first one.",
-      call. = FALSE
-    )
-  }
+    if (nrow(sel) > 1) {
+        warning(
+            "Multiple TIFF files found for sample_id ",
+            sample_id,
+            "; using the first one.",
+            call. = FALSE
+        )
+    }
 
-  sel$tiff_file[[1]]
-}
-
-.rects_from_df <- function(df) {
-  lapply(seq_len(nrow(df)), function(i) {
-    TiffPlotR::TiffRect(df$XMin[i], df$XMax[i], df$YMin[i], df$YMax[i])
-  })
+    sel$tiff_file[[1]]
 }
 
 #' Load Selected Cell-Level Data For a CellQuery
@@ -170,6 +185,10 @@ select_representative_cells <- function(
 #'   to return per sample.
 #' @param annotate_color Annotation color passed to
 #'   [TiffPlotR::rect_annotate()].
+#' @param cell_data_store Optional [CellDataStore-class] object. If provided,
+#'   all cells in the full data frame will be annotated in the background.
+#' @param background_cell_color Color to use for background cell annotations.
+#'   Defaults to "lightblue".
 #'
 #' @return A named list keyed by sample id where each element is a list of
 #'   `TiffPlotR` image objects.
@@ -182,6 +201,7 @@ select_representative_cells <- function(
 #' plot(imgs[[1]][[1]])
 #' }
 #' @export
+#' @import TiffPlotR
 fetch_representative_tiff_images <- function(
         object,
         sampled_cells,
@@ -190,10 +210,16 @@ fetch_representative_tiff_images <- function(
         red_channel = 2,
         green_channel = 3,
         blue_channel = 1,
-        annotate_color = "yellow"
+        annotate_color = "yellow",
+        cell_data_store = NULL,
+        background_cell_color = "lightblue"
 ) {
     stopifnot(methods::is(object, "CellQueryInfo"))
     .stop_if_missing_tiffplotr()
+
+    if (!is.null(cell_data_store)) {
+        stopifnot(methods::is(cell_data_store, "CellDataStore"))
+    }
 
     if (is.data.frame(sampled_cells)) {
         stopifnot("sample_id" %in% colnames(sampled_cells))
@@ -214,15 +240,17 @@ fetch_representative_tiff_images <- function(
             return(list())
         }
 
-        rects <- .rects_from_df(sample_df)
-        rects <- rects[seq_len(min(length(rects), max_images_per_sample))]
+        n_take <- min(nrow(sample_df), max_images_per_sample)
+        sample_df <- sample_df[seq_len(n_take), , drop = FALSE]
 
-        max_dim <- max(vapply(rects, function(r) {
-            max(r@xmax - r@xmin, r@ymax - r@ymin)
-        }, numeric(1)))
+        max_dim <- max(pmax(
+            sample_df$XMax - sample_df$XMin,
+            sample_df$YMax - sample_df$YMin
+        ))
         resize_dim <- max_dim * fetch_resize_mult
 
-        lapply(rects, function(r) {
+        lapply(seq_len(nrow(sample_df)), function(i) {
+            r <- .single_rect_from_row(sample_df, i, rect_name = sample_df$ObjectId[i])
             r_fetch <- TiffPlotR::rect_resize_abs(r, resize_dim, resize_dim)
             img_res <- TiffPlotR::fetchTiffData.rgb(
                 img_file,
@@ -231,6 +259,39 @@ fetch_representative_tiff_images <- function(
                 red_channel = red_channel,
                 green_channel = green_channel
             )
+
+            # Annotate background cells if cell_data_store is provided
+            if (!is.null(cell_data_store)) {
+                full_df <- get_full_cell_data(cell_data_store)
+                background_df <- full_df[full_df$sample_id == sample_id, , drop = FALSE]
+                # subset to region around r_fetch
+                background_df <- background_df[
+                    !(
+                        background_df$XMin > r_fetch@xmax |
+                            background_df$XMax < r_fetch@xmin |
+                            background_df$YMax < r_fetch@ymin |
+                            background_df$YMin > r_fetch@ymax
+                    ),
+                    ,
+                    drop = FALSE
+                ]
+                # remove primary rect
+                background_df <- background_df[
+                    !background_df$ObjectId %in% r@name,
+                    ,
+                    drop = FALSE
+                ]
+                if (nrow(background_df) > 0) {
+                    background_rects <- .rects_from_df(background_df)
+                    img_res@plots$rgb <- TiffPlotR::rect_annotate(
+                        img_res@plots$rgb,
+                        background_rects,
+                        color = background_cell_color
+                    )
+                }
+            }
+
+            # Annotate the selected cell on top
             img_res@plots$rgb <- TiffPlotR::rect_annotate(
                 img_res@plots$rgb,
                 r,

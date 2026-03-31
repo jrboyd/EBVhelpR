@@ -12,7 +12,9 @@ fetch_representative_tiff_images(
   red_channel = 2,
   green_channel = 3,
   blue_channel = 1,
-  annotate_color = "yellow"
+  annotate_color = "yellow",
+  cell_data_store = NULL,
+  background_cell_color = "lightblue"
 )
 }
 \arguments{
@@ -29,6 +31,12 @@ to return per sample.}
 
 \item{annotate_color}{Annotation color passed to
 \code{\link[TiffPlotR:rect_annotate]{TiffPlotR::rect_annotate()}}.}
+
+\item{cell_data_store}{Optional \linkS4class{CellDataStore} object. If provided,
+all cells in the full data frame will be annotated in the background.}
+
+\item{background_cell_color}{Color to use for background cell annotations.
+Defaults to "lightblue".}
 }
 \value{
 A named list keyed by sample id where each element is a list of
