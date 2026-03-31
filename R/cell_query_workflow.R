@@ -265,38 +265,39 @@ fetch_representative_tiff_images <- function(
                 full_df <- get_full_cell_data(cell_data_store)
                 background_df <- full_df[full_df$sample_id == sample_id, , drop = FALSE]
                 # subset to region around r_fetch
-                background_df <- background_df[
-                    !(
-                        background_df$XMin > r_fetch@xmax |
-                            background_df$XMax < r_fetch@xmin |
-                            background_df$YMax < r_fetch@ymin |
-                            background_df$YMin > r_fetch@ymax
-                    ),
-                    ,
-                    drop = FALSE
-                ]
+                background_rects = .rects_from_df(background_df, rect_names = background_df$ObjectId)
+                background_rects = TiffPlotR::rect_test_overlap(background_rects, r_fetch, subset = TRUE)
                 # remove primary rect
-                background_df <- background_df[
-                    !background_df$ObjectId %in% r@name,
-                    ,
-                    drop = FALSE
-                ]
-                if (nrow(background_df) > 0) {
-                    background_rects <- .rects_from_df(background_df)
-                    img_res@plots$rgb <- TiffPlotR::rect_annotate(
+                background_rects@coords = background_rects@coords %>% filter(name != r_fetch@coords$name)
+
+                if (nrow(background_rects@coords) > 0) {
+                    img_res@plots$rgb.annotated <- TiffPlotR::rect_annotate(
                         img_res@plots$rgb,
                         background_rects,
                         color = background_cell_color
                     )
+                }else{
+                    img_res@plots$rgb.annotated <- img_res@plots$rgb + ggplot2::labs(caption = "no annotations in view")
                 }
+                img_res@activePlot = "rgb.annotated"
+
+                # Annotate the selected cell on top
+                img_res@plots$rgb.annotated <- TiffPlotR::rect_annotate(
+                    img_res@plots$rgb.annotated,
+                    r,
+                    color = annotate_color
+                )
+            }else{
+                # Annotate the selected cell on top
+                img_res@plots$rgb.annotated <- TiffPlotR::rect_annotate(
+                    img_res@plots$rgb,
+                    r,
+                    color = annotate_color
+                )
+                img_res@activePlot = "rgb.annotated"
             }
 
-            # Annotate the selected cell on top
-            img_res@plots$rgb <- TiffPlotR::rect_annotate(
-                img_res@plots$rgb,
-                r,
-                color = annotate_color
-            )
+
             img_res
         })
     })

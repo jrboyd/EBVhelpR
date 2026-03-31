@@ -27,8 +27,111 @@ assay_to_project_name = c(
 project_name_to_assay = names(assay_to_project_name)
 names(project_name_to_assay) = assay_to_project_name
 
-
-
 .get_valid_project_names = function(){
     assay_to_project_name[unlist(EBV_ASSAY_TYPES)]
 }
+
+EBV_CHANNELS = EBV_ASSAY_TYPES
+
+# 1
+# DAPI
+# 2
+# PAX5
+# 3
+# EBNA2
+# 4
+# CD3
+# 5
+# EBNA3A
+# 6
+# LMP1
+# 7
+# CD4
+# 8
+# CD30
+# 9
+# c-Myc
+# 10
+# EBNA3B
+# 11
+# CD8
+# 12
+# EBNA3C
+# 13
+# PDL1
+# 14
+# LMP2A
+# 15
+# CD20
+# 16
+# PD1
+
+EBV_CHANNELS$phenocycler = c(
+    "DAPI",
+    'PAX5',
+    'EBNA2',
+    "CD3",
+    "EBNA3A",
+    "LMP1",
+    "CD4",
+    "CD30",
+    "c-Myc",
+    "EBNA3B",
+    "CD8",
+    "EBNA3C",
+    "PDL1",
+    "LMP2A",
+    "CD20",
+    "PD1"
+)
+stopifnot(EBV_CHANNELS$phenocycler[6] == "LMP1")
+stopifnot(EBV_CHANNELS$phenocycler[11] == "CD8")
+stopifnot(EBV_CHANNELS$phenocycler[15] == "CD20")
+stopifnot(EBV_CHANNELS$phenocycler[16] == "PD1")
+
+
+# Probe Cocktail
+# C1 Dye
+# C2 Dye
+# C3 Dye
+# C4 Dye
+# Test Probe Cocktail (C1- EBER1/C2-EBNA2/C3-LMP1/C4-EBNA3)
+# 520
+# 620
+# 570
+# 690
+# The other two channels are DAPI and autofluorescence.
+#
+
+
+EBV_CHANNELS$rnascope_4plex = c(
+    "DAPI",
+    "EBER1",
+    "EBNA2",
+    "LMP1",
+    "EBNA3",
+    "Autofluoresence"
+)
+
+# For the RNAScope + IF the channels are set up like this:
+#
+#     
+# Probe Cocktail
+# C1 Dye (TSA F1)
+# C3 Dye (TSA F2)
+# C4 Dye (TSA F3)
+# EBNA 1 Ab Dye (TSA F4)
+# C1 -EBER/C3- LMP1/C4-EBNA1
+# 520
+# 570
+# 620
+# 690
+
+
+EBV_CHANNELS$`rnascope_3plex+IF` = c(
+    "DAPI",
+    "EBER",
+    "LMP1",
+    "EBNA1",
+    "Autofluoresence"
+)
