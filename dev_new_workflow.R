@@ -70,11 +70,164 @@ img_res.with_bg <- fetch_representative_tiff_images(
     background_cell_color = "orange"
 )
 
-reannotate_image_list = function(img_res, cds, annotation_color = "yellow", source_image_name = "rgb", target_image_name = paste0(source_image_name, ".reann")){
-    #iterate all img_res in list (or single img_res, then be sure to return single img_res, not list)
-    #match sample in cds and find overlapping rects, annotate with annotation_color
-    p = img_res$CTEBV_11[[1]]@plots[[source_image_name]]
-    img_res$CTEBV_11[[1]]@plots[[target_image_name]] = p + rect_annotate()
+cds.full <- load_query_cell_data_store(cq)
+img_res.reanno = reannotate_image_list(img_res, cds.full, target_image_name = "test")
+cds.full@selected_df %>% head
+cds.full %>% dplyr::filter(Opal520Classification == 1)
+cds.full %>% dplyr::filter(Opal570Classification == 1)
+cds.full %>% dplyr::filter(Opal620Classification == 1)
+
+img_res.reanno = reannotate_image_list(img_res,
+                                       cds.full,
+                                       annotation_color = "white",
+                                       target_image_name = "test")
+img_res.reanno = reannotate_image_list(img_res.reanno,
+                                       cds.full %>% dplyr::filter(Opal520Classification == 1),
+                                       annotation_color = "red",
+                                       source_image_name = "test", target_image_name = "test")
+img_res.reanno = reannotate_image_list(img_res.reanno,
+                                       cds.full %>% dplyr::filter(Opal570Classification == 1),
+                                       annotation_color = "green",
+                                       source_image_name = "test", target_image_name = "test")
+
+reannotate_image_list = function(img_res, cds, annotation_color = "white", source_image_name = "rgb", target_image_name = paste0(source_image_name, ".reann")){
+  stopifnot(methods::is(cds, "CellDataStore"))
+  stopifnot(requireNamespace("TiffPlotR", quietly = TRUE))
+
+  full_df <- get_full_cell_data(cds)
+  # Cache all cell rects per sample_id so repeated images from the same sample
+  # do not rebuild the same TiffRect object over and over.
+  rect_cache <- list()
+
+  rects_from_df <- function(df) {
+    TiffPlotR::TiffRect(
+      df$XMin,
+      df$XMax,
+      df$YMin,
+      df$YMax,
+      name = as.character(df$ObjectId)
+    )
+  }
+
+  get_fetch_rect <- function(img) {
+    slot_names <- methods::slotNames(img)
+    rect_slots <- c("fetch_rect", "fetchRect", "rect", "region", "crop_rect", "subset_rect", "tiff_rect")
+
+    for (slot_name in rect_slots) {
+      if (slot_name %in% slot_names) {
+        slot_val <- methods::slot(img, slot_name)
+        if (methods::is(slot_val, "TiffRect")) {
+          return(slot_val)
+        }
+      }
+    }
+
+    # Fallback: derive the viewing window from plot limits.
+    gb <- ggplot2::ggplot_build(img@plots[[source_image_name]])
+    panel <- gb$layout$panel_params[[1]]
+
+    x_range <- panel$x.range
+    if (is.null(x_range)) {
+      x_range <- panel$x_range
+    }
+    y_range <- panel$y.range
+    if (is.null(y_range)) {
+      y_range <- panel$y_range
+    }
+
+    if (is.null(x_range) || is.null(y_range)) {
+      stop("Could not infer fetch rectangle from image object/plot.")
+    }
+
+    TiffPlotR::TiffRect(
+      min(x_range),
+      max(x_range),
+      min(y_range),
+      max(y_range),
+      name = "focus"
+    )
+  }
+
+  get_sample_rects <- function(sample_id) {
+    key <- as.character(sample_id)
+    if (!key %in% names(rect_cache)) {
+      sample_df <- full_df[full_df$sample_id == key, , drop = FALSE]
+      rect_cache[[key]] <<- rects_from_df(sample_df)
+    }
+    rect_cache[[key]]
+  }
+
+  annotate_one <- function(img, sample_id) {
+    if (is.null(sample_id) || !nzchar(sample_id)) {
+      stop("Could not infer sample_id for an image. Pass the full named image list from fetch_representative_tiff_images().")
+    }
+
+    fetch_rect <- get_fetch_rect(img)
+    background_rects <- get_sample_rects(sample_id)
+    # Keep only rectangles that intersect the current image window.
+    background_rects <- TiffPlotR::rect_test_overlap(background_rects, fetch_rect, subset = TRUE)
+
+    if (nrow(background_rects@coords) > 0) {
+      primary_name <- fetch_rect@coords$name
+      # Exclude the focal/primary rectangle name so only background cells remain.
+      if (!is.null(primary_name) && length(primary_name) > 0) {
+        coords_df <- background_rects@coords
+        coords_df <- coords_df[
+          !(coords_df[["name"]] %in% primary_name),
+          ,
+          drop = FALSE
+        ]
+        background_rects@coords <- coords_df
+      }
+    }
+
+    p <- img@plots[[source_image_name]]
+    if (nrow(background_rects@coords) > 0) {
+      img@plots[[target_image_name]] <- TiffPlotR::rect_annotate(
+        p,
+        background_rects,
+        color = annotation_color
+      )
+    } else {
+      img@plots[[target_image_name]] <- p + ggplot2::labs(caption = "no annotations in view")
+    }
+
+    img@activePlot <- target_image_name
+    img
+  }
+
+  walk_images <- function(x, sample_id = NULL) {
+    if (methods::is(x, "TiffPlotData") && "plots" %in% methods::slotNames(x)) {
+      return(annotate_one(x, sample_id = sample_id))
+    }
+
+    if (!is.list(x)) {
+      return(x)
+    }
+
+    nms <- names(x)
+    out <- lapply(seq_along(x), function(i) {
+      x_i <- x[[i]]
+      name_i <- if (!is.null(nms)) nms[[i]] else NULL
+
+      next_sample_id <- sample_id
+      # If sample_id was not passed down yet, infer it from named top-level nodes
+      # (the list returned by fetch_representative_tiff_images is keyed by sample).
+      if (is.null(next_sample_id) && !is.null(name_i) && nzchar(name_i) && name_i %in% full_df$sample_id) {
+        next_sample_id <- name_i
+      }
+
+      walk_images(x_i, sample_id = next_sample_id)
+    })
+    if (!is.null(nms)) {
+      names(out) <- nms
+    }
+    out
+  }
+
+  out <- walk_images(img_res)
+
+  out
 }
 
 img_res.with_bg$CTEBV_11[[2]]
