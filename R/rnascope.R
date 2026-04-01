@@ -23,9 +23,12 @@
 
   res_files <- res_files[!grepl("Wide", res_files)]
   res_files <- res_files[!grepl("Object", res_files)]
+  # res_files <- res_files[
+  #   grepl("RNAScopeIF_Coexpression_2026-02-11", res_files) |
+  #     grepl("RNAScope_Coexpression_2026-01-12.csv", res_files)
+  # ]
   res_files <- res_files[
-    grepl("RNAScopeIF_Coexpression_2026-02-11", res_files) |
-      grepl("RNAScope_Coexpression_2026-01-12.csv", res_files)
+      !grepl("Sara", res_files)
   ]
 
   if (!length(res_files)) {
@@ -34,18 +37,21 @@
 
   file_rename <- c(
     "RNAScope_Coexpression_2026-01-12.csv" = EBV_ASSAY_TYPES$rnascope_4plex,
-    "RNAScopeIF_Coexpression_2026-02-11.csv" = EBV_ASSAY_TYPES$`rnascope_3plex+IF`
+    "RNAScopeIF_Coexpression_2026-02-11.csv" = EBV_ASSAY_TYPES$`rnascope_3plex+IF`,
+    "4PlexRNAScopeCellPelletSingleExpression_2026-01-12.csv" = EBV_ASSAY_TYPES$rnascope_4plex,
+    "RNAScopeIFCellPelletSingleExpression_2026-02-11.csv" = EBV_ASSAY_TYPES$`rnascope_3plex+IF`
   )
-
   names(res_files) <- file_rename[basename(res_files)]
-  keep <- !is.na(names(res_files))
-  res_files <- as.list(res_files[keep])
+  #
+  # keep <- !is.na(names(res_files))
+  # res_files <- as.list(res_files[keep])
 
   if (!length(res_files)) {
     stop("No RNAscope files matched known filenames.", call. = FALSE)
   }
 
   all_dt_l <- .load_csv_list(res_files)
+
   dplyr::bind_rows(all_dt_l, .id = "assay")
 }
 
@@ -66,31 +72,29 @@
 load_rnascope_summary_files <- function(data_dir = NULL) {
   rscope_dt <- .find_and_load_rnascope_summary_files(data_dir = data_dir)
   meta_df <- load_meta_data()
-  meta_df = meta_df %>% dplyr::mutate(SampleStripped = gsub("_", "", sample_id))
-  s2s <- meta_df$sample_id
-  names(s2s) <- meta_df$SampleStripped
 
-  # is_valid = rscope_dt$SampleNumber %in% names(s2s)
-  # rscope_dt[!is_valid,]$SampleNumber %>% table
-  # bad_samples = rscope_dt[!is_valid,]$SampleNumber %>% unique
-  # if(length(bad_samples) > 0){
-  #   warning("bad samples detected (removed):\n",
-  #           paste(bad_samples, collapse = "\n"))
-  # }
+  # rscope_dt = rscope_dt %>% dplyr::mutate(SampleStripped := sub("(NegCTL)|(PosCTL)", "", SampleNumber))
+  rscope_dt = rscope_dt %>%
+      dplyr::mutate(sample_id = ifelse(is.na(SampleNumber), Sample, SampleNumber)) %>%
+      dplyr::mutate(sample_id = ifelse(is.na(SampleNumber), sample_id, sub("CTEBV", "CTEBV_", sample_id))) %>%
+      dplyr::mutate(sample_id = ifelse(is.na(SampleNumber), sample_id, sub("DEB", "D_EB_", sample_id))) %>%
+      dplyr::mutate(sample_id = sub("GM185022$", "GM18502", sample_id))
 
-  rscope_dt = rscope_dt %>% dplyr::mutate(SampleStripped := sub("(NegCTL)|(PosCTL)", "", SampleNumber))
 
-  stopifnot(all(rscope_dt$SampleStripped %in% names(s2s)))
-  rscope_dt$SampleID <- s2s[rscope_dt$SampleStripped]
+  rscope_dt$staining_control = "N/A"
+  rscope_dt = rscope_dt %>% dplyr::mutate(staining_control = ifelse(grepl("[Nn]eg", Sample) | grepl("[Nn]eg", SampleNumber), "negative_probe", staining_control))
+  rscope_dt = rscope_dt %>% dplyr::mutate(staining_control = ifelse(grepl("[Pp]os", Sample) | grepl("[Pp]os", SampleNumber), "positive_probe", staining_control))
+  rscope_dt = rscope_dt %>% dplyr::mutate(sample_id = sub("NegCTL", "", sample_id))  %>% dplyr::mutate(sample_id = sub("PosCTL", "", sample_id))
 
-  anno_df <- dplyr::select(meta_df, SampleID = sample_id, EBER_status)
-  rscope_dt <- merge(rscope_dt, anno_df, all.x = TRUE)
+  setdiff(rscope_dt$sample_id, meta_df$sample_id)
+  setdiff(meta_df$sample_id, rscope_dt$sample_id)
+
+  rscope_dt <- merge(rscope_dt, meta_df, all.x = TRUE, by = "sample_id")
   rscope_dt <- dplyr::mutate(
     rscope_dt,
     EBER_status = ifelse(is.na(.data$EBER_status), "need info", .data$EBER_status)
   )
 
-  rscope_dt$sample_id <- rscope_dt$SampleID
   if (!"project_name" %in% colnames(rscope_dt)) {
     rscope_dt$project_name <- assay_to_project_name[rscope_dt$assay]
   }

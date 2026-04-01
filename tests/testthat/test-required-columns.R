@@ -4,7 +4,7 @@ required_cols <- c("sample_id", "assay", "project_name")
 test_that("load_phenocycler_summary_files returns required columns", {
   testthat::local_mocked_bindings(
     .find_and_load_phenocycler_summary_files = function(data_dir = NULL) {
-      data.frame(Sample = "A_1", stringsAsFactors = FALSE)
+      data.frame(Sample = "A_1", `Image Tag` = "tag.tiff", stringsAsFactors = FALSE, check.names = FALSE)
     },
     load_meta_data = function() {
       data.frame(sample_id = "A_1", EBER_status = "positive", stringsAsFactors = FALSE)
@@ -22,8 +22,9 @@ test_that("load_rnascope_summary_files returns required columns", {
     .find_and_load_rnascope_summary_files = function(data_dir = NULL) {
       data.frame(
         assay = EBV_ASSAY_TYPES$rnascope_4plex,
+        Sample = "A_1",
         SampleNumber = "A1",
-        stringsAsFactors = FALSE
+        `Image Tag` = "tag.tiff", stringsAsFactors = FALSE, check.names = FALSE
       )
     },
     load_meta_data = function() {

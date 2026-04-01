@@ -4,25 +4,14 @@
 \alias{load_wgs_count_summary}
 \title{Summarize host vs viral WGS read counts}
 \usage{
-load_wgs_count_summary(
-  count_dir,
-  genome_gr,
-  viral_seqname = "NC_007605.1",
-  meta_df = NULL,
-  count_pattern = "txt$"
-)
+load_wgs_count_summary(wgs_files_df, genome_gr, viral_seqname = "NC_007605.1")
 }
 \arguments{
-\item{count_dir}{Directory containing per-sample count txt files.}
+\item{wgs_files_df}{Output from \code{\link[=setup_wgs_files]{setup_wgs_files()}}.}
 
 \item{genome_gr}{Genome ranges from \code{\link[=load_wgs_reference_genome]{load_wgs_reference_genome()}}.}
 
 \item{viral_seqname}{Viral reference seqname in BAM/count files.}
-
-\item{meta_df}{Optional metadata table with columns \code{sample_id} and
-\code{EBER_status}. Defaults to \code{\link[=load_meta_data]{load_meta_data()}}.}
-
-\item{count_pattern}{Filename pattern for count files.}
 }
 \value{
 A data frame ordered by increasing viral enrichment.

@@ -5,26 +5,19 @@
 \title{Load and smooth EBV bigwig pileup profiles}
 \usage{
 load_wgs_bigwig_pileup(
-  bigwig_dir,
+  wgs_files_df,
   genome_gr,
   viral_seqname = "NC_007605.1",
-  meta_df = NULL,
-  bigwig_pattern = "norm",
   smooth_n = 50,
   mc_cores = 1
 )
 }
 \arguments{
-\item{bigwig_dir}{Directory containing normalized bigwig files.}
+\item{wgs_files_df}{Output from \code{\link[=setup_wgs_files]{setup_wgs_files()}}.}
 
 \item{genome_gr}{Genome ranges from \code{\link[=load_wgs_reference_genome]{load_wgs_reference_genome()}}.}
 
 \item{viral_seqname}{Viral reference seqname to profile.}
-
-\item{meta_df}{Optional metadata table with columns \code{sample_id} and
-\code{EBER_status}. Defaults to \code{\link[=load_meta_data]{load_meta_data()}}.}
-
-\item{bigwig_pattern}{Pattern for normalized bigwig files.}
 
 \item{smooth_n}{Moving-average window size.}
 

@@ -27,6 +27,79 @@
   out
 }
 
+#' Build WGS file index with metadata
+#'
+#' Discovers WGS count and bigwig files from known root directories, harmonizes
+#' sample ids, and appends EBER status metadata.
+#'
+#' @param wgs_root_dir Optional root WGS directory. If `NULL`, known Windows and
+#'   Linux locations are checked.
+#' @param count_subdir Subdirectory under root containing count files.
+#' @param bigwig_subdir Subdirectory under root containing bigwig files.
+#' @param count_pattern Pattern for count files.
+#' @param bigwig_pattern Pattern for bigwig files.
+#' @param meta_df Optional metadata table with columns `sample_id` and
+#'   `EBER_status`. Defaults to [load_meta_data()].
+#'
+#' @return A data frame with `sample_id`, `count_file`, `bigwig_file`, and
+#'   `EBER_status`.
+#' @export
+setup_wgs_files <- function(
+  wgs_root_dir = NULL,
+  count_subdir = "chr_read_counts",
+  bigwig_subdir = "bigwigs",
+  count_pattern = "txt$",
+  bigwig_pattern = "norm",
+  meta_df = NULL
+) {
+  if (is.null(meta_df)) {
+    meta_df <- load_meta_data()
+  }
+
+  if (is.null(wgs_root_dir)) {
+    win_dir <- "C:/Users/boydj/OneDrive - UVM Larner College of Medicine/projects_ashley/EBV_DLBCL/P2_viral_WGS"
+    lin_dir <- "/gpfs1/pi/avolaric/files_jrboyd/P2_viral_WGS"
+    candidates <- c(win_dir, lin_dir)
+    existing <- candidates[dir.exists(candidates)]
+    if (!length(existing)) {
+      stop("Could not locate WGS data directory.", call. = FALSE)
+    }
+    wgs_root_dir <- existing[[1]]
+  }
+
+  count_dir <- file.path(wgs_root_dir, count_subdir)
+  bigwig_dir <- file.path(wgs_root_dir, bigwig_subdir)
+  if (!dir.exists(count_dir)) {
+    stop("Count directory not found: ", count_dir, call. = FALSE)
+  }
+  if (!dir.exists(bigwig_dir)) {
+    stop("Bigwig directory not found: ", bigwig_dir, call. = FALSE)
+  }
+
+  count_files <- list.files(count_dir, pattern = count_pattern, full.names = TRUE)
+  if (!length(count_files)) {
+    stop("No count files found.", call. = FALSE)
+  }
+  count_df <- data.frame(count_file = count_files, stringsAsFactors = FALSE)
+  count_df$sample_id <- sub("_read.+", "", basename(count_df$count_file))
+
+  bigwig_files <- list.files(bigwig_dir, pattern = bigwig_pattern, full.names = TRUE)
+  if (!length(bigwig_files)) {
+    stop("No bigwig files found.", call. = FALSE)
+  }
+  bigwig_df <- data.frame(bigwig_file = bigwig_files, stringsAsFactors = FALSE)
+  bigwig_df$sample_id <- sub("_dedu.+", "", basename(bigwig_df$bigwig_file))
+
+
+  wgs_df <- merge(count_df, bigwig_df, by = "sample_id", all = TRUE)
+  wgs_df$sample_id <- .harmonize_bigwig_sample_ids(wgs_df$sample_id, meta_df$sample_id)
+
+  wgs_df <- merge(wgs_df, meta_df[, c("sample_id", "EBER_status")], by = "sample_id", all.x = TRUE)
+  wgs_df$EBER_status[is.na(wgs_df$EBER_status)] <- "need info"
+
+  wgs_df
+}
+
 #' Load WGS reference ranges
 #'
 #' Reads the package chrSizes.txt file.
@@ -38,10 +111,10 @@
 #' @import GenomicRanges
 #' @export
 load_wgs_reference_genome <- function() {
-    chr_file = system.file("extdata/WGS_chrSizes.txt", package = "EBVhelpR", mustWork = TRUE)
-    gr_df = read.table(chr_file)
-    gr_df = gr_df %>% dplyr::rename(seqnames = V1, end = V2)
-    gr_df$start = 1
+  chr_file = system.file("extdata/WGS_chrSizes.txt", package = "EBVhelpR", mustWork = TRUE)
+  gr_df = utils::read.table(chr_file, stringsAsFactors = FALSE)
+  colnames(gr_df)[1:2] <- c("seqnames", "end")
+  gr_df$start = 1
 
   genome_gr <- GenomicRanges::GRanges(gr_df)
   sl <- GenomicRanges::width(genome_gr)
@@ -57,33 +130,34 @@ load_wgs_reference_genome <- function() {
 #' Loads per-sample count files and computes host/viral read fractions and
 #' viral enrichment, matching the original WGS ranking workflow.
 #'
-#' @param count_dir Directory containing per-sample count txt files.
+#' @param wgs_files_df Output from [setup_wgs_files()].
 #' @param genome_gr Genome ranges from [load_wgs_reference_genome()].
 #' @param viral_seqname Viral reference seqname in BAM/count files.
-#' @param meta_df Optional metadata table with columns `sample_id` and
-#'   `EBER_status`. Defaults to [load_meta_data()].
-#' @param count_pattern Filename pattern for count files.
 #'
 #' @return A data frame ordered by increasing viral enrichment.
 #' @export
 load_wgs_count_summary <- function(
-  count_dir,
+  wgs_files_df,
   genome_gr,
-  viral_seqname = "NC_007605.1",
-  meta_df = NULL,
-  count_pattern = "txt$"
+  viral_seqname = "NC_007605.1"
 ) {
-  count_files <- list.files(count_dir, pattern = count_pattern, full.names = TRUE)
-  if (!length(count_files)) {
-    stop("No count files found in `count_dir`.", call. = FALSE)
+  if (!all(c("sample_id", "count_file") %in% colnames(wgs_files_df))) {
+    stop("`wgs_files_df` must contain columns `sample_id` and `count_file`.", call. = FALSE)
   }
 
-  sample_id <- sub("_read.+", "", basename(count_files))
+  count_files <- unique(stats::na.omit(wgs_files_df$count_file))
+  if (!length(count_files)) {
+    stop("No count files found in `wgs_files_df$count_file`.", call. = FALSE)
+  }
+
+  sample_lookup <- wgs_files_df$sample_id
+  names(sample_lookup) <- wgs_files_df$count_file
+
   count_df <- do.call(
     rbind,
     lapply(seq_along(count_files), function(i) {
       df <- utils::read.table(count_files[[i]], col.names = c("seqnames", "reads"))
-      df$sample_id <- sample_id[[i]]
+      df$sample_id <- sample_lookup[[count_files[[i]]]]
       df
     })
   )
@@ -123,11 +197,13 @@ load_wgs_count_summary <- function(
     levels = unique(count_summary$sample_id)
   )
 
-  if (is.null(meta_df)) {
-    meta_df <- load_meta_data()
+  if (!"EBER_status" %in% colnames(wgs_files_df)) {
+    status_df <- load_meta_data()[, c("sample_id", "EBER_status")]
+  } else {
+    status_df <- unique(wgs_files_df[, c("sample_id", "EBER_status")])
   }
 
-  out <- merge(count_summary, meta_df, by = "sample_id", all.x = TRUE)
+  out <- merge(count_summary, status_df, by = "sample_id", all.x = TRUE)
   out <- dplyr::mutate(
     out,
     EBER_status = ifelse(is.na(.data$EBER_status), "need info", .data$EBER_status)
@@ -140,12 +216,9 @@ load_wgs_count_summary <- function(
 #' Fetches normalized bigwig signal across the EBV reference and merges status
 #' metadata for downstream plotting.
 #'
-#' @param bigwig_dir Directory containing normalized bigwig files.
+#' @param wgs_files_df Output from [setup_wgs_files()].
 #' @param genome_gr Genome ranges from [load_wgs_reference_genome()].
 #' @param viral_seqname Viral reference seqname to profile.
-#' @param meta_df Optional metadata table with columns `sample_id` and
-#'   `EBER_status`. Defaults to [load_meta_data()].
-#' @param bigwig_pattern Pattern for normalized bigwig files.
 #' @param smooth_n Moving-average window size.
 #' @param mc_cores Number of cores to pass to seqsetvis.
 #'
@@ -154,26 +227,25 @@ load_wgs_count_summary <- function(
 #' @import seqsetvis
 #' @export
 load_wgs_bigwig_pileup <- function(
-  bigwig_dir,
+  wgs_files_df,
   genome_gr,
   viral_seqname = "NC_007605.1",
-  meta_df = NULL,
-  bigwig_pattern = "norm",
   smooth_n = 50,
   mc_cores = 1
 ) {
-  if (is.null(meta_df)) {
-    meta_df <- load_meta_data()
+  if (!all(c("sample_id", "bigwig_file") %in% colnames(wgs_files_df))) {
+    stop("`wgs_files_df` must contain columns `sample_id` and `bigwig_file`.", call. = FALSE)
   }
 
-  bw_files <- list.files(bigwig_dir, pattern = bigwig_pattern, full.names = TRUE)
+  bw_files <- unique(stats::na.omit(wgs_files_df$bigwig_file))
   if (!length(bw_files)) {
-    stop("No bigwig files found in `bigwig_dir`.", call. = FALSE)
+    stop("No bigwig files found in `wgs_files_df$bigwig_file`.", call. = FALSE)
   }
 
   bw_df <- data.frame(file = bw_files, stringsAsFactors = FALSE)
-  bw_df$sample <- sub("_dedup.+", "", basename(bw_df$file))
-  bw_df$sample <- .harmonize_bigwig_sample_ids(bw_df$sample, meta_df$sample_id)
+  sample_lookup <- wgs_files_df$sample_id
+  names(sample_lookup) <- wgs_files_df$bigwig_file
+  bw_df$sample <- sample_lookup[bw_df$file]
 
   qgr <- genome_gr[as.character(GenomicRanges::seqnames(genome_gr)) == viral_seqname]
   if (!length(qgr)) {
@@ -187,7 +259,13 @@ load_wgs_bigwig_pileup <- function(
   pileup_dt <- seqsetvis::ssvFetchBigwig(bw_df, qgr, return_data.table = TRUE)
   pileup_dt <- seqsetvis::applyMovingAverage(pileup_dt, n = smooth_n)
 
-  bw_meta_df <- dplyr::filter(meta_df, .data$sample_id %in% bw_df$sample) |>
+  if (!"EBER_status" %in% colnames(wgs_files_df)) {
+    bw_meta_df <- load_meta_data()[, c("sample_id", "EBER_status")]
+  } else {
+    bw_meta_df <- unique(wgs_files_df[, c("sample_id", "EBER_status")])
+  }
+
+  bw_meta_df <- dplyr::filter(bw_meta_df, .data$sample_id %in% bw_df$sample) |>
     dplyr::select(sample = .data$sample_id, .data$EBER_status)
 
   plot_dt <- merge(pileup_dt, bw_meta_df, by = "sample", all.x = TRUE)

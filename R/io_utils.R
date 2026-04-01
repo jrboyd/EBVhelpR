@@ -13,13 +13,13 @@
 }
 
 .load_csv_list <- function(files) {
-  all_dt_l <- list()
-  for (name in names(files)) {
-    message("Loading data for ", name)
-    file_path <- files[[name]]
-    stopifnot(file.exists(file_path))
-    all_dt_l[[name]] <- .load_csv(file_path)
-  }
+  all_dt_l = lapply(files, function(file_path){
+      message("Loading data for ", file_path)
+      stopifnot(file.exists(file_path))
+      out = .load_csv(file_path)
+      out$source_file = file_path
+      out
+  })
   all_dt_l
 }
 

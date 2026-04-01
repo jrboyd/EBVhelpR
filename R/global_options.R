@@ -31,6 +31,18 @@ names(project_name_to_assay) = assay_to_project_name
     assay_to_project_name[unlist(EBV_ASSAY_TYPES)]
 }
 
+
+#' Title
+#'
+#' @returns
+#' @export
+#'
+#' @examples
+get_colors_EBER_status = function(){
+    readRDS(system.file("extdata/colors_EBER_status.Rds", package = "EBVhelpR", mustWork = TRUE))
+}
+
+
 EBV_CHANNELS = EBV_ASSAY_TYPES
 
 # 1
@@ -135,3 +147,18 @@ EBV_CHANNELS$`rnascope_3plex+IF` = c(
     "EBNA1",
     "Autofluoresence"
 )
+
+#' Channel identities in tiff files.
+#'
+#' Named list of channel names.
+#'
+#' @format A named list with three character elements:
+#' \describe{
+#'   \item{phenocycler}{`"Phenocycler"`}
+#'   \item{rnascope_4plex}{`"RNAScope_4plex"`}
+#'   \item{rnascope_3plex+IF}{`"RNAScope_3plex+IF"`}
+#' }
+#' @examples
+#' EBV_CHANNELS$rnascope_4plex
+#' @export
+EBV_CHANNELS = EBV_CHANNELS

@@ -3,68 +3,31 @@ library(ggplot2)
 
 # Example WGS workflow using EBVhelpR helper functions.
 # Update `wgs_root_dir` to your local WGS analysis directory if needed.
-
-
-
-# stopifnot(dir.exists(wgs_bwa_dir))
-stopifnot(dir.exists(count_dir))
-stopifnot(dir.exists(bigwig_dir))
+# Set to NULL to use package defaults.
+wgs_root_dir <- NULL
 
 meta_df <- load_meta_data()
 
-# 1) Build reference GRanges from BAM header.
+# 1) Build WGS file index and reference ranges.
+wgs_files_df <- setup_wgs_files(
+  wgs_root_dir = wgs_root_dir,
+  meta_df = meta_df
+)
+
 genome_gr <- load_wgs_reference_genome()
-
-setup_wgs_files = function(){
-    win_dir = "C:/Users/boydj/OneDrive - UVM Larner College of Medicine/projects_ashley/EBV_DLBCL/P2_viral_WGS"
-    lin_dir = "/gpfs1/pi/avolaric/files_jrboyd/P2_viral_WGS"
-    wgs_root_dir = win_dir
-    if(!dir.exists(wgs_root_dir)){
-        wgs_root_dir = lin_dir
-        if(!dir.exists(wgs_root_dir)){
-            stop("Could not locate WGS data directory.")
-        }
-    }
-
-    # wgs_bwa_dir <- file.path(wgs_root_dir, "output_bwa")
-    count_dir <- file.path(wgs_root_dir, "chr_read_counts")
-    bigwig_dir <- file.path(wgs_root_dir, "bigwigs")
-    stopifnot(dir.exists(count_dir))
-    stopifnot(dir.exists(bigwig_dir))
-
-    count_files = dir(count_dir, full.names = TRUE)
-    count_df = data.frame(count_file = count_files)
-    count_df = count_df %>% dplyr::mutate(sample_id = sub("_read.+", "", basename(count_file)))
-
-    bw_files = dir(bigwig_dir, pattern = "norm", full.names = TRUE)
-    bw_df = data.frame(bigwig = bw_files)
-    bw_df = bw_df %>% dplyr::mutate(sample_id = sub("_dedu.+", "", basename(bigwig)))
-    wgs_df = merge(count_df, bw_df, by = "sample_id", all = TRUE)
-    #some samples end in extra 2, redone?
-    wgs_df = wgs_df %>% dplyr::mutate(sample_id = ifelse(grepl("[0-9]_1$", sample_id), sub("_1$", "", sample_id), sample_id))
-    wgs_df = wgs_df %>% dplyr::mutate(sample_id = ifelse(grepl("[0-9]_2$", sample_id), sub("_2$", "", sample_id), sample_id))
-    wgs_df = merge(wgs_df, meta_df, by = "sample_id", all.x = TRUE)
-    stopifnot(!any(is.na(wgs_df$EBER_status)))
-    wgs_df %>% dplyr::filter(is.na(EBER_status))
-    wgs_df
-}
-
-wgs_df = setup_wgs_files()
 
 # 2) Compute host/viral read summary metrics.
 wgs_count_summary <- load_wgs_count_summary(
-    count_dir = count_dir,
+    wgs_files_df = wgs_files_df,
     genome_gr = genome_gr,
-    viral_seqname = "NC_007605.1",
-    meta_df = meta_df
+    viral_seqname = "NC_007605.1"
 )
 
 # 3) Load smoothed bigwig pileups over the EBV genome.
 pileup_df <- load_wgs_bigwig_pileup(
-    bigwig_dir = bigwig_dir,
+    wgs_files_df = wgs_files_df,
     genome_gr = genome_gr,
     viral_seqname = "NC_007605.1",
-    meta_df = meta_df,
     smooth_n = 50,
     mc_cores = 4
 )
@@ -85,6 +48,34 @@ p_heat_norm <- plot_wgs_pileup_heatmap(
     normalize_by_sample = TRUE
 )
 
+colors_EBER_status = seqsetvis::safeBrew(wgs_count_summary$EBER_status)
+colors_EBER_status = as.list(colors_EBER_status)
+colors_EBER_status$Negative = "cornflowerblue"
+colors_EBER_status$`Not performed` = "palegreen"
+colors_EBER_status$Positive = "coral"
+saveRDS(colors_EBER_status, "inst/extdata/colors_EBER_status.Rds")
+
+head(wgs_count_summary)
+
+theme_set(ggpubr::theme_pubr())
+
+ggplot(wgs_count_summary, aes(y = sample_id, viral_read_fraction, fill = EBER_status, color = EBER_status)) +
+    geom_col() +
+    scale_fill_manual(values = colors_EBER_status) +
+    scale_color_manual(values = colors_EBER_status) +
+    theme(axis.text.y = element_text(hjust = 0, size = 8))
+
+sel_df = wgs_files_df %>% dplyr::filter(sample_id == "D_EB_25")
+f = sel_df$bigwig_file
+full_df = rtracklayer::import.bw(f)
+full_df = full_df %>% as.data.frame
+full_df %>% dplyr::group_by(seqnames) %>% dplyr::summarise(score = max(score)) %>% dplyr::arrange(-score)
+
+full_df %>% dplyr::filter(seqnames == "chr2") %>% dplyr::mutate(x = (start + end)/2)
+plot_df = full_df %>% dplyr::filter(seqnames == "chr2")
+ggplot(plot_df, aes(x = start, xend = end, y = score, yend = score)) + geom_segment()
+ggplot(plot_df, aes(x = start, y = score)) + geom_path()
+
 # Print plots in sequence for interactive dev sessions.
 print(p_enrichment)
 print(p_reads)
@@ -93,6 +84,35 @@ print(p_lines_zoom)
 print(p_heat)
 print(p_heat_norm)
 
+
+
 # Optional save examples:
 # ggsave("wgs_viral_enrichment.png", p_enrichment, width = 6, height = 8)
 # ggsave("wgs_pileup_heatmap_norm.png", p_heat_norm, width = 6, height = 8)
+load_rnascope_summary_files
+EBV_ASSAY_TYPES$rnascope_4plex
+debug(EBVhelpR::load_rnascope_summary_files)
+rscope_df = EBVhelpR::load_rnascope_summary_files()
+rscope_df %>% dplyr::filter(grepl("CTEBV15", SampleNumber))
+
+rscope_df$sample_id
+rscope_df$EBER_status %>% table
+debug(load_phenocycler_summary_files)
+phenO_df = EBVhelpR::load_phenocycler_summary_files()
+phenO_df %>% subset(grepl("Neg", source)) %>% dplyr::select(EBER_status)
+
+EBVhelpR::get_query_summary_df()
+
+seqsetvis::ssvFeatureVenn(list(WGS = wgs_count_summary$sample_id, RSCOPE_4 = rscope_df[rscope_df$assay == EBV_ASSAY_TYPES$rnascope_4plex,]$sample_id))
+seqsetvis::ssvFeatureVenn(list(WGS = wgs_count_summary$sample_id, RSCOPE_3IF = rscope_df[rscope_df$assay == EBV_ASSAY_TYPES$`rnascope_3plex+IF`,]$sample_id))
+seqsetvis::ssvFeatureVenn(list(WGS = wgs_count_summary$sample_id, PHENO = phenO_df$sample_id))
+
+setdiff(wgs_count_summary$sample_id, rscope_df[rscope_df$assay == EBV_ASSAY_TYPES$rnascope_4plex,]$sample_id)
+setdiff(wgs_count_summary$sample_id, rscope_df[rscope_df$assay == EBV_ASSAY_TYPES$`rnascope_3plex+IF`,]$sample_id)
+setdiff(wgs_count_summary$sample_id, phenO_df$sample_id)
+
+setdiff(rscope_df[rscope_df$assay == EBV_ASSAY_TYPES$rnascope_4plex,]$sample_id, wgs_count_summary$sample_id)
+setdiff(rscope_df[rscope_df$assay == EBV_ASSAY_TYPES$`rnascope_3plex+IF`,]$sample_id, wgs_count_summary$sample_id)
+setdiff(phenO_df$sample_id, wgs_count_summary$sample_id)
+
+phenO_df %>% dplyr::filter(is.na(sample_id))
