@@ -12,7 +12,7 @@
 
 #' Write All Package Cell Data Files
 #'
-#' Discovers supported RNAscope and phenocycler object-level CSV files and
+#' Discovers supported RNAscope and Phenocycler object-level CSV files and
 #' writes per-sample package data outputs for each file via
 #' [write_package_data_for_file()].
 #'
@@ -144,12 +144,18 @@ write_package_data_for_file <- function(file) {
     tiff_df
 }
 
+#' .get_valid_project_names = EBVhelpR:::.get_valid_project_names
+#' .get_example_images_df = EBVhelpR:::.get_example_images_df
 get_tiff_file_path_df = function(){
     win_dir = "Z:/FUSION DATA/AshleyVolaric"
+    win_dir2 = "C:/Users/boydj/project_data/EBV_image_files"
     lin_dir = "/netfiles/volaric_research/DLBCL_EBV_detection/image_files"
     tiff_dir = win_dir
     if(!dir.exists(tiff_dir)){
         tiff_dir = lin_dir
+    }
+    if(!dir.exists(tiff_dir)){
+        tiff_dir = win_dir2
     }
     if(!dir.exists(tiff_dir)){
         warning("Could not locate TIFF root directory. Returning example tiffs with fake paths.")
@@ -157,9 +163,7 @@ get_tiff_file_path_df = function(){
         tiff_df$project_name = tiff_df$assay
         tiff_df$assay = project_name_to_assay[tiff_df$project_name]
     }else{
-        dir_names = dir(tiff_dir)
-        stopifnot(all(.get_valid_project_names() %in% dir_names))
-        dir_names = .get_valid_project_names()
+        dir_names = intersect(.get_valid_project_names(), dir(tiff_dir))
         names(dir_names) = dir_names
         tiff_files.by_project = lapply(dir_names, function(d){
             files = dir(file.path(tiff_dir, d), recursive = TRUE, pattern = "tiff?$", full.names = TRUE)
@@ -201,8 +205,8 @@ get_tiff_file_path_df = function(){
             is_control = grepl("NegCTL", x) | grepl("Control", x)
             x[is_control]
             x[!is_control]
-            control_group = ifelse(is_control, "NegCTL", "PosCTL")
-            paste(cells, control_group, sep = '_')
+            ifelse(is_control, paste(cells, "NegCTL", sep = '_'), cells)
+
         }
         tiff_df = tiff_df %>%
             dplyr::mutate(name = ifelse(
@@ -222,7 +226,7 @@ get_tiff_file_path_df = function(){
         tiff_df$assay = project_name_to_assay[tiff_df$project_name]
     }
 
-    tiff_df$probe_control = "N/A"
+    tiff_df$probe_control = ""
     tiff_df = tiff_df %>% dplyr::mutate(probe_control = ifelse(grepl("[Nn]eg", sample_id), "negative_probe", probe_control))
     tiff_df = tiff_df %>% dplyr::mutate(probe_control = ifelse(grepl("[Pp]os", sample_id), "positive_probe", probe_control))
 

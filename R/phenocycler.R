@@ -1,6 +1,6 @@
-#' Load phenocycler summary CSV files
+#' Load Phenocycler summary CSV files
 #'
-#' Reads all phenocycler summary CSV files from the configured data directory,
+#' Reads all Phenocycler summary CSV files from the configured data directory,
 #' combines them, and derives a standardized `Sample` identifier.
 #'
 #' @param data_dir Optional directory containing source summary files. If `NULL`,
@@ -22,7 +22,7 @@
     )
 
     if (!length(res_files)) {
-        stop("No phenocycler summary files found.", call. = FALSE)
+        stop("No Phenocycler summary files found.", call. = FALSE)
     }
 
     names(res_files) <- basename(dirname(res_files))
@@ -30,34 +30,35 @@
 
     dt <- dplyr::bind_rows(all_dt_l, .id = "source")
     if (!"Image Tag" %in% colnames(dt)) {
-        stop("Expected column `Image Tag` was not found in phenocycler summaries.", call. = FALSE)
+        stop("Expected column `Image Tag` was not found in Phenocycler summaries.", call. = FALSE)
     }
 
-    dt.cell_pellet = dt %>% dplyr::filter(grepl("CellPelletSlide", `Image Tag`))
+    # dt.cell_pellet = dt %>% dplyr::filter(grepl("CellPelletSlide", `Image Tag`))
+    #
+    # str_last = function(x){
+    #     sapply(strsplit(sub("\\..+", "", x), "_"), function(xx){xx[length(xx)]})
+    # }
+    #
+    # dt.cell_pellet = dt.cell_pellet %>% dplyr::mutate(Sample = paste(sep = "_",
+    #                                                                  str_last(`Image Tag`),
+    #                                                                  ifelse(grepl("control", "Image Tag"), "NegCTL", "PosCTL")
+    # ))
+    # dt.cell_pellet$Sample
+    #
+    # dt.main = dt %>% dplyr::filter(!grepl("CellPelletSlide", `Image Tag`))
+    #
+    # dt.main <- dt.main |>
+    #     dplyr::mutate(Sample = sub("\\..+", "", .data$`Image Tag`)) |>
+    #     dplyr::mutate(Sample = sub("_Scan.+", "", .data$Sample)) |>
+    #     dplyr::mutate(Sample = gsub("-", "", .data$Sample))
 
-    str_last = function(x){
-        sapply(strsplit(sub("\\..+", "", x), "_"), function(xx){xx[length(xx)]})
-    }
-
-    dt.cell_pellet = dt.cell_pellet %>% dplyr::mutate(Sample = paste(sep = "_",
-                                                                     str_last(`Image Tag`),
-                                                                     ifelse(grepl("control", "Image Tag"), "NegCTL", "PosCTL")
-    ))
-    dt.cell_pellet$Sample
-
-    dt.main = dt %>% dplyr::filter(!grepl("CellPelletSlide", `Image Tag`))
-
-    dt.main <- dt.main |>
-        dplyr::mutate(Sample = sub("\\..+", "", .data$`Image Tag`)) |>
-        dplyr::mutate(Sample = sub("_Scan.+", "", .data$Sample)) |>
-        dplyr::mutate(Sample = gsub("-", "", .data$Sample))
-
-    dt = rbind(dt.main, dt.cell_pellet)
+    # dt = rbind(dt.main, dt.cell_pellet)
+    dt
 }
 
-#' Harmonize phenocycler summaries with EBV status metadata and ensure compatible sample ids.
+#' Harmonize Phenocycler summaries with EBV status metadata and ensure compatible sample ids.
 #'
-#' Loads phenocycler summary data and metadata, maps sample identifiers, and
+#' Loads Phenocycler summary data and metadata, maps sample identifiers, and
 #' appends `EBER_status` annotation.
 #'
 #' @param data_dir Optional directory containing source summary files. If `NULL`,
@@ -71,18 +72,22 @@
 #' @export
 load_phenocycler_summary_files <- function(data_dir = NULL) {
     pcycler_dt <- .find_and_load_phenocycler_summary_files(data_dir = data_dir)
+
     meta_df <- load_meta_data()
 
-    pcycler_dt = pcycler_dt %>% mutate(sample_id = Sample) %>%
+
+    pcycler_dt = pcycler_dt %>% mutate(sample_id = `Image Tag`) %>%
+        mutate(sample_id = sub("\\..+", "", sample_id)) %>%
+        mutate(sample_id = gsub("-", "_", sample_id)) %>%
         mutate(sample_id = sub("DEB", "D_EB_", sample_id)) %>%
-        mutate(sample_id = sub("CTEBV", "CTEBV_", sample_id))  %>%
-        mutate(sample_id = sub("_PosCTL", "", sample_id))
+        mutate(sample_id = sub("CTEBV", "CTEBV_", sample_id)) %>%
+        mutate(probe_control = ifelse(grepl("Control", sample_id), "negative_probe", "")) %>%
+        mutate(sample_id = sub("CellPelletSlide_Control_Scan1_Phenocycler_", "", sample_id)) %>%
+        mutate(sample_id = sub("CellPelletSlide_Test_Scan1_Phenocycler_", "", sample_id)) %>%
+        mutate(sample_id = sub("_Scan.+", "", sample_id))
 
 
-    pcycler_dt$stain_control = "N/A"
-    pcycler_dt = pcycler_dt %>%
-        dplyr::mutate(stain_control = ifelse(grepl("Control", `Image Tag`), "control", stain_control)) %>%
-        dplyr::mutate(stain_control = ifelse(grepl("Test", `Image Tag`), "test", stain_control))
+    setdiff(pcycler_dt$sample_id, meta_df$sample_id)
 
 
     pcycler_dt <- merge(pcycler_dt, meta_df, all.x = TRUE, by = "sample_id")
@@ -90,7 +95,7 @@ load_phenocycler_summary_files <- function(data_dir = NULL) {
         pcycler_dt,
         EBER_status = ifelse(is.na(.data$EBER_status), "need info", .data$EBER_status)
     )
-    pcycler_dt$assay = EBV_ASSAY_TYPES$phenocycler
-    pcycler_dt$project_name = assay_to_project_name[EBV_ASSAY_TYPES$phenocycler]
+    pcycler_dt$assay = EBV_ASSAY_TYPES$Phenocycler
+    pcycler_dt$project_name = assay_to_project_name[EBV_ASSAY_TYPES$Phenocycler]
     pcycler_dt
 }

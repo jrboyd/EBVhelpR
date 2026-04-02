@@ -2,7 +2,7 @@
 % Please edit documentation in R/phenocycler.R
 \name{.find_and_load_phenocycler_summary_files}
 \alias{.find_and_load_phenocycler_summary_files}
-\title{Load phenocycler summary CSV files}
+\title{Load Phenocycler summary CSV files}
 \usage{
 .find_and_load_phenocycler_summary_files(data_dir = NULL)
 }
@@ -15,6 +15,6 @@ A data frame with one row per record and a \code{source} column indicating
 the file group.
 }
 \description{
-Reads all phenocycler summary CSV files from the configured data directory,
+Reads all Phenocycler summary CSV files from the configured data directory,
 combines them, and derives a standardized \code{Sample} identifier.
 }

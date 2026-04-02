@@ -8,7 +8,7 @@ CellQuery(assay_type = NULL)
 }
 \arguments{
 \item{assay_type}{Character scalar assay type. If \code{NULL}, defaults to
-\code{EBV_ASSAY_TYPES$rnascope_4plex}.}
+\code{EBV_ASSAY_TYPES$RNAScope_4plex}.}
 }
 \value{
 A validated \linkS4class{CellQueryInfo} object.
@@ -19,5 +19,5 @@ initializes selection to all sample ids in the cell-file table.
 }
 \examples{
 q <- CellQuery()
-q2 <- CellQuery(EBV_ASSAY_TYPES$phenocycler)
+q2 <- CellQuery(EBV_ASSAY_TYPES$Phenocycler)
 }

@@ -6,10 +6,10 @@
 \usage{
 select_representative_cells(
   cell_df,
-  marker_col = "Opal520Classification",
+  marker_col = NULL,
   marker_value = 1,
   n_cells = 9,
-  sample_col = "sample_id",
+  sample_col = "unique_id",
   seed = 1
 )
 }

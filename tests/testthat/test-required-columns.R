@@ -21,7 +21,7 @@ test_that("load_rnascope_summary_files returns required columns", {
   testthat::local_mocked_bindings(
     .find_and_load_rnascope_summary_files = function(data_dir = NULL) {
       data.frame(
-        assay = EBV_ASSAY_TYPES$rnascope_4plex,
+        assay = EBV_ASSAY_TYPES$RNAScope_4plex,
         Sample = "A_1",
         SampleNumber = "A1",
         `Image Tag` = "tag.tiff", stringsAsFactors = FALSE, check.names = FALSE

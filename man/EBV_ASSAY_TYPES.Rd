@@ -7,8 +7,8 @@
 \format{
 A named list with three character elements:
 \describe{
-\item{phenocycler}{\code{"Phenocycler"}}
-\item{rnascope_4plex}{\code{"RNAScope_4plex"}}
+\item{Phenocycler}{\code{"Phenocycler"}}
+\item{RNAScope_4plex}{\code{"RNAScope_4plex"}}
 \item{rnascope_3plex+IF}{\code{"RNAScope_3plex+IF"}}
 }
 }
@@ -20,6 +20,6 @@ Named list of supported assay type identifiers used by data loaders,
 query constructors, and filtering helpers throughout the package.
 }
 \examples{
-EBV_ASSAY_TYPES$rnascope_4plex
+EBV_ASSAY_TYPES$RNAScope_4plex
 }
 \keyword{datasets}

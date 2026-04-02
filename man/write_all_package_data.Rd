@@ -10,7 +10,7 @@ write_all_package_data()
 Invisibly returns \code{NULL} after attempting to write all package data files.
 }
 \description{
-Discovers supported RNAscope and phenocycler object-level CSV files and
+Discovers supported RNAscope and Phenocycler object-level CSV files and
 writes per-sample package data outputs for each file via
 \code{\link[=write_package_data_for_file]{write_package_data_for_file()}}.
 }

@@ -2,7 +2,7 @@
 % Please edit documentation in R/phenocycler.R
 \name{load_phenocycler_summary_files}
 \alias{load_phenocycler_summary_files}
-\title{Harmonize phenocycler summaries with EBV status metadata and ensure compatible sample ids.}
+\title{Harmonize Phenocycler summaries with EBV status metadata and ensure compatible sample ids.}
 \usage{
 load_phenocycler_summary_files(data_dir = NULL)
 }
@@ -14,7 +14,7 @@ the package resolver checks \code{EBVHELPER_DATA_DIR} and known default paths.}
 A data frame with harmonized identifiers and EBV status annotation.
 }
 \description{
-Loads phenocycler summary data and metadata, maps sample identifiers, and
+Loads Phenocycler summary data and metadata, maps sample identifiers, and
 appends \code{EBER_status} annotation.
 }
 \examples{

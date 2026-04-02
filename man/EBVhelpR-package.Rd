@@ -6,7 +6,7 @@
 \alias{EBVhelpR-package}
 \title{EBVhelpR: EBV DLBCL Project Data Help in R}
 \description{
-Support for analysis of EBV DLBCL project data - WGS, phenocycler, RNAscope, cosMx
+Support for analysis of EBV DLBCL project data - WGS, Phenocycler, RNAscope, cosMx
 }
 \author{
 \strong{Maintainer}: Joseph Boyd \email{boydrj7@gmail.com}

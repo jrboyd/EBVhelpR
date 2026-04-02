@@ -90,7 +90,7 @@ print(p_heat_norm)
 # ggsave("wgs_viral_enrichment.png", p_enrichment, width = 6, height = 8)
 # ggsave("wgs_pileup_heatmap_norm.png", p_heat_norm, width = 6, height = 8)
 load_rnascope_summary_files
-EBV_ASSAY_TYPES$rnascope_4plex
+EBV_ASSAY_TYPES$RNAScope_4plex
 rscope_df = EBVhelpR::load_rnascope_summary_files()
 rscope_df %>% dplyr::filter(grepl("CTEBV_15", sample_id))
 
@@ -102,16 +102,16 @@ phenO_df %>% subset(grepl("Neg", source)) %>% dplyr::select(EBER_status)
 
 EBVhelpR::get_query_summary_df()
 
-seqsetvis::ssvFeatureVenn(list(WGS = wgs_count_summary$sample_id, RSCOPE_4 = rscope_df[rscope_df$assay == EBV_ASSAY_TYPES$rnascope_4plex,]$sample_id))
-seqsetvis::ssvFeatureVenn(list(WGS = wgs_count_summary$sample_id, RSCOPE_3IF = rscope_df[rscope_df$assay == EBV_ASSAY_TYPES$`rnascope_3plex+IF`,]$sample_id))
+seqsetvis::ssvFeatureVenn(list(WGS = wgs_count_summary$sample_id, RSCOPE_4 = rscope_df[rscope_df$assay == EBV_ASSAY_TYPES$RNAScope_4plex,]$sample_id))
+seqsetvis::ssvFeatureVenn(list(WGS = wgs_count_summary$sample_id, RSCOPE_3IF = rscope_df[rscope_df$assay == EBV_ASSAY_TYPES$`RNAScope_3plex+IF`,]$sample_id))
 seqsetvis::ssvFeatureVenn(list(WGS = wgs_count_summary$sample_id, PHENO = phenO_df$sample_id))
 
-setdiff(wgs_count_summary$sample_id, rscope_df[rscope_df$assay == EBV_ASSAY_TYPES$rnascope_4plex,]$sample_id)
-setdiff(wgs_count_summary$sample_id, rscope_df[rscope_df$assay == EBV_ASSAY_TYPES$`rnascope_3plex+IF`,]$sample_id)
+setdiff(wgs_count_summary$sample_id, rscope_df[rscope_df$assay == EBV_ASSAY_TYPES$RNAScope_4plex,]$sample_id)
+setdiff(wgs_count_summary$sample_id, rscope_df[rscope_df$assay == EBV_ASSAY_TYPES$`RNAScope_3plex+IF`,]$sample_id)
 setdiff(wgs_count_summary$sample_id, phenO_df$sample_id)
 
-setdiff(rscope_df[rscope_df$assay == EBV_ASSAY_TYPES$rnascope_4plex,]$sample_id, wgs_count_summary$sample_id)
-setdiff(rscope_df[rscope_df$assay == EBV_ASSAY_TYPES$`rnascope_3plex+IF`,]$sample_id, wgs_count_summary$sample_id)
+setdiff(rscope_df[rscope_df$assay == EBV_ASSAY_TYPES$RNAScope_4plex,]$sample_id, wgs_count_summary$sample_id)
+setdiff(rscope_df[rscope_df$assay == EBV_ASSAY_TYPES$`RNAScope_3plex+IF`,]$sample_id, wgs_count_summary$sample_id)
 setdiff(phenO_df$sample_id, wgs_count_summary$sample_id)
 
 phenO_df %>% dplyr::filter(is.na(sample_id))

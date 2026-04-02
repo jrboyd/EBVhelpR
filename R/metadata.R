@@ -7,7 +7,11 @@
   rows <- meta_df[prev_sample, , drop = FALSE]
   expanded <- lapply(seq_len(nrow(rows)), function(i) {
     parts <- strsplit(rows$sample_id[i], " previously ", fixed = TRUE)[[1]]
-    data.frame(sample_id = parts, EBER_status = rows$EBER_status[i], stringsAsFactors = FALSE)
+    df = data.frame(sample_id = parts, stringsAsFactors = FALSE)
+    for(cn in setdiff(colnames(rows), "sample_id")){
+        df[[cn]] = rows[[cn]]
+    }
+    df
   })
 
   rbind(meta_df[!prev_sample, , drop = FALSE], do.call(rbind, expanded))
@@ -47,8 +51,7 @@ load_meta_data <- function() {
     stop("EBER status sheet must have at least two columns.", call. = FALSE)
   }
 
-  meta_df <- meta_df[, 1:2, drop = FALSE]
-  colnames(meta_df) <- c("sample_id", "EBER_status")
+  colnames(meta_df) <- c("sample_id", "EBER_status", "sample_type")
 
   meta_df$sample_id <- gsub("-", "_", meta_df$sample_id)
   meta_df$sample_id <- gsub("[()]", "", meta_df$sample_id)

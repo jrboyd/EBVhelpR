@@ -35,11 +35,22 @@ methods::setClass(
         all_cell_files_df = "data.frame",
         meta_data_df = "data.frame",
         selected_sample_ids = "character",
+        selected_unique_ids = "character",
         tiff_paths_df = "data.frame",
         assay_type = "character"
     ),
     validity = .validate_CellQueryInfo
 )
+
+.df_prep = function(df){
+    stopifnot("sample_id" %in% colnames(df))
+    stopifnot("probe_control" %in% colnames(df))
+    df = df %>% dplyr::mutate(unique_id =
+                                  ifelse(probe_control == "",
+                                         sample_id,
+                                         paste(sample_id, probe_control)))
+    df
+}
 
 #' Construct a CellQueryInfo Object
 #'
@@ -47,25 +58,25 @@ methods::setClass(
 #' initializes selection to all sample ids in the cell-file table.
 #'
 #' @param assay_type Character scalar assay type. If `NULL`, defaults to
-#'   `EBV_ASSAY_TYPES$rnascope_4plex`.
+#'   `EBV_ASSAY_TYPES$RNAScope_4plex`.
 #'
 #' @return A validated [CellQueryInfo-class] object.
 #' @examples
 #' q <- CellQuery()
-#' q2 <- CellQuery(EBV_ASSAY_TYPES$phenocycler)
+#' q2 <- CellQuery(EBV_ASSAY_TYPES$Phenocycler)
 #' @export
 CellQuery <- function(
         assay_type = NULL
 ) {
     if(is.null(assay_type)){
-       assay_type = EBV_ASSAY_TYPES$rnascope_4plex
-       message("Defaulting to assay type ", assay_type, ".")
-       message("Select valid assay types with EBV_ASSAY_TYPES, i.e. EBV_ASSAY_TYPES$rnascope_4plex.")
+        assay_type = EBV_ASSAY_TYPES$RNAScope_4plex
+        message("Defaulting to assay type ", assay_type, ".")
+        message("Select valid assay types with EBV_ASSAY_TYPES, i.e. EBV_ASSAY_TYPES$RNAScope_4plex")
     }
     stopifnot(assay_type %in% EBV_ASSAY_TYPES)
-    if(assay_type == EBV_ASSAY_TYPES$phenocycler){
+    if(assay_type == EBV_ASSAY_TYPES$Phenocycler){
         summary_df = load_phenocycler_summary_files()
-    }else if(assay_type %in% c(EBV_ASSAY_TYPES$rnascope_4plex, EBV_ASSAY_TYPES$`rnascope_3plex+IF`)){
+    }else if(assay_type %in% c(EBV_ASSAY_TYPES$RNAScope_4plex, EBV_ASSAY_TYPES$`RNAScope_3plex+IF`)){
         summary_df = load_rnascope_summary_files()
         summary_df = dplyr::filter(summary_df, assay == assay_type)
     }else{
@@ -90,12 +101,19 @@ CellQuery <- function(
 
     selected_sample_ids = all_cell_files_df$sample_id %>% unique
 
+    summary_df = .df_prep(summary_df)
+    all_cell_files_df = .df_prep(all_cell_files_df)
+    tiff_paths_df = .df_prep(tiff_paths_df)
+
+    selected_unique_ids = all_cell_files_df$sample_id %>% unique
+
     obj <- methods::new(
         "CellQueryInfo",
         summary_df = summary_df,
         all_cell_files_df = all_cell_files_df,
         meta_data_df = meta_data_df,
         selected_sample_ids = selected_sample_ids,
+        selected_unique_ids = selected_unique_ids,
         tiff_paths_df = tiff_paths_df,
         assay_type = assay_type
     )
@@ -111,19 +129,32 @@ CellQuery <- function(
     idx[[1]]
 }
 
-.get_sample_ids <- function(df) {
+.get_sample_control_ids = function(df){
     sample_col = "sample_id"
+    control_col = "probe_control"
+    if (is.null(sample_col) || !nrow(df)) {
+        return(character(0))
+    }
+    unique(
+        paste(
+            as.character(stats::na.omit(df[[sample_col]])),
+            as.character(stats::na.omit(df[[control_col]]))
+        )
+    )
+}
+
+.get_sample_ids <- function(df, sample_col = "sample_id") {
+
     if (is.null(sample_col) || !nrow(df)) {
         return(character(0))
     }
     unique(as.character(stats::na.omit(df[[sample_col]])))
 }
 
-.filter_by_selected_sample_ids <- function(df, selected_sample_ids) {
+.filter_by_selected_sample_ids <- function(df, selected_sample_ids, sample_col = "sample_id") {
     if (!nrow(df)) {
         return(df)
     }
-    sample_col = "sample_id"
     if (!length(selected_sample_ids)) {
         return(df[0, , drop = FALSE])
     }
@@ -151,15 +182,29 @@ CellQuery <- function(
     invisible(NULL)
 }
 
-.limit_query_to_sample_ids <- function(object, sample_ids) {
+.limit_query_to_sample_ids <- function(object, sample_ids, unique_ids) {
     sample_ids <- unique(as.character(sample_ids))
 
-    object@summary_df <- .filter_by_selected_sample_ids(object@summary_df, sample_ids)
-    object@all_cell_files_df <- .filter_by_selected_sample_ids(object@all_cell_files_df, sample_ids)
-    object@tiff_paths_df <- .filter_by_selected_sample_ids(object@tiff_paths_df, sample_ids)
     object@meta_data_df <- .filter_by_selected_sample_ids(object@meta_data_df, sample_ids)
+
+    object@summary_df <- .filter_by_selected_sample_ids(
+        object@summary_df,
+        unique_ids, "unique_id"
+    )
+    object@all_cell_files_df <- .filter_by_selected_sample_ids(
+        object@all_cell_files_df,
+        unique_ids, "unique_id"
+    )
+    object@tiff_paths_df <- .filter_by_selected_sample_ids(
+        object@tiff_paths_df,
+        unique_ids, "unique_id"
+    )
+
     object@selected_sample_ids <- intersect(object@selected_sample_ids, sample_ids)
     object@selected_sample_ids <- unique(as.character(object@selected_sample_ids))
+
+    object@selected_unique_ids <- intersect(object@selected_unique_ids, unique_ids)
+    object@selected_unique_ids <- unique(as.character(object@selected_unique_ids))
 
     methods::validObject(object)
     object
@@ -176,7 +221,11 @@ CellQuery <- function(
 #' @export
 filter_query_to_all_cell_file_samples <- function(object) {
     stopifnot(methods::is(object, "CellQueryInfo"))
-    .limit_query_to_sample_ids(object, .get_sample_ids(object@all_cell_files_df))
+    .limit_query_to_sample_ids(
+        object,
+        .get_sample_ids(object@all_cell_files_df),
+        .get_sample_ids(object@all_cell_files_df, sample_col = "unique_id")
+    )
 }
 
 #' Filter Query Data To TIFF-Path Sample IDs
@@ -190,7 +239,11 @@ filter_query_to_all_cell_file_samples <- function(object) {
 #' @export
 filter_query_to_tiff_path_samples <- function(object) {
     stopifnot(methods::is(object, "CellQueryInfo"))
-    .limit_query_to_sample_ids(object, .get_sample_ids(object@tiff_paths_df))
+    .limit_query_to_sample_ids(
+        object,
+        .get_sample_ids(object@tiff_paths_df),
+        .get_sample_ids(object@tiff_paths_df, sample_col = "unique_id")
+    )
 }
 
 #' Get Summary Rows From CellQueryInfo
@@ -226,7 +279,7 @@ get_query_cell_files_df <- function(object, selected_only = TRUE) {
     if (!selected_only) {
         return(object@all_cell_files_df)
     }
-    .filter_by_selected_sample_ids(object@all_cell_files_df, object@selected_sample_ids)
+    .filter_by_selected_sample_ids(object@all_cell_files_df, object@selected_unique_ids, sample_col = "unique_id")
 }
 
 #' Get TIFF Path Rows From CellQueryInfo
@@ -260,6 +313,23 @@ get_query_tiff_paths_df <- function(object, selected_only = TRUE) {
 set_selected_sample_ids <- function(object, selected_sample_ids) {
     stopifnot(methods::is(object, "CellQueryInfo"))
     object@selected_sample_ids <- unique(as.character(selected_sample_ids))
+    methods::validObject(object)
+    object
+}
+
+#' Set Selected Sample IDs
+#'
+#' @param object A [CellQueryInfo-class] object.
+#' @param selected_sample_ids Character vector of selected sample ids.
+#'
+#' @return Updated [CellQueryInfo-class] object.
+#' @examples
+#' q <- CellQuery()
+#' q <- set_selected_sample_ids(q, head(get_query_summary_df(q)$sample_id, 2))
+#' @export
+set_selected_unique_ids <- function(object, selected_unique_ids) {
+    stopifnot(methods::is(object, "CellQueryInfo"))
+    object@selected_unique_ids <- unique(as.character(selected_unique_ids))
     methods::validObject(object)
     object
 }
@@ -313,7 +383,15 @@ set_selected_sample_ids <- function(object, selected_sample_ids) {
         `Cell Data` = cq@all_cell_files_df$sample_id,
         `Tiffs Available` = cq@tiff_paths_df$sample_id
     )
+    uniq_ids.l = list(
+        Summarized = cq@summary_df$unique_id,
+        `Cell Data` = cq@all_cell_files_df$unique_id,
+        `Tiffs Available` = cq@tiff_paths_df$unique_id
+    )
+
     samp_ids.l = lapply(samp_ids.l, unique)
+    uniq_ids.l = lapply(uniq_ids.l, unique)
+
     assayed_ids = unlist(samp_ids.l[-1]) %>% unique
     perc_assayed = round(100*length(assayed_ids) / length(samp_ids.l$documented), 1)
 
@@ -321,12 +399,14 @@ set_selected_sample_ids <- function(object, selected_sample_ids) {
         paste0(length(x), " (", round(100*length(x)/length(other), 1), "%)")
     }
 
-    slot_reports = sapply(samp_ids.l[-1], function(x){
-        .report_overlap(x, assayed_ids)
+    unique_ids = unlist(uniq_ids.l) %>% unique
+    slot_reports = sapply(uniq_ids.l, function(x){
+        .report_overlap(x, unique_ids)
     })
 
     message(length(samp_ids.l$documented), " total documented samples")
     message(.report_overlap(assayed_ids, samp_ids.l$documented), " have assay data")
+    message(length(unique_ids), " total samples, counting controls")
     message("of assayed samples:")
     for(name in names(slot_reports)){
         pad_len = max(nchar(slot_reports)) + 2

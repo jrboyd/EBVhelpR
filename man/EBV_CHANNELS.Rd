@@ -7,8 +7,8 @@
 \format{
 A named list with three character elements:
 \describe{
-\item{phenocycler}{\code{"Phenocycler"}}
-\item{rnascope_4plex}{\code{"RNAScope_4plex"}}
+\item{Phenocycler}{\code{"Phenocycler"}}
+\item{RNAScope_4plex}{\code{"RNAScope_4plex"}}
 \item{rnascope_3plex+IF}{\code{"RNAScope_3plex+IF"}}
 }
 }
@@ -19,6 +19,6 @@ EBV_CHANNELS
 Named list of channel names.
 }
 \examples{
-EBV_CHANNELS$rnascope_4plex
+EBV_CHANNELS$RNAScope_4plex
 }
 \keyword{datasets}

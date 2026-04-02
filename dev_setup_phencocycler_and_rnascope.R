@@ -16,6 +16,7 @@ ggplot(rscope_df, aes(x = combo, y = Positive_Percent)) +
 
 # view example cells
 # debug(load_cell_source_files)
+load_cell_source_files
 cell_info_df = EBVhelpR::load_cell_source_files()
 
 

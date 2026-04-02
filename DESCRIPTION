@@ -9,7 +9,7 @@ Authors@R: c(
       role = c("aut", "cre")
     )
   )
-Description: Support for analysis of EBV DLBCL project data - WGS, phenocycler, RNAscope, cosMx
+Description: Support for analysis of EBV DLBCL project data - WGS, Phenocycler, RNAscope, cosMx
 License: What license is it under?
 Encoding: UTF-8
 LazyData: true

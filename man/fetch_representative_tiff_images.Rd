@@ -14,7 +14,8 @@ fetch_representative_tiff_images(
   blue_channel = 1,
   annotate_color = "yellow",
   cell_data_store = NULL,
-  background_cell_color = "lightblue"
+  background_cell_color = "lightblue",
+  sample_col = "unique_id"
 )
 }
 \arguments{

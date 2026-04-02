@@ -5,17 +5,17 @@
 #'
 #' @format A named list with three character elements:
 #' \describe{
-#'   \item{phenocycler}{`"Phenocycler"`}
-#'   \item{rnascope_4plex}{`"RNAScope_4plex"`}
+#'   \item{Phenocycler}{`"Phenocycler"`}
+#'   \item{RNAScope_4plex}{`"RNAScope_4plex"`}
 #'   \item{rnascope_3plex+IF}{`"RNAScope_3plex+IF"`}
 #' }
 #' @examples
-#' EBV_ASSAY_TYPES$rnascope_4plex
+#' EBV_ASSAY_TYPES$RNAScope_4plex
 #' @export
 EBV_ASSAY_TYPES = list(
-    phenocycler = "Phenocycler",
-    rnascope_4plex = "RNAScope_4plex",
-    "rnascope_3plex+IF" = "RNAScope_3plex+IF"
+    Phenocycler = "Phenocycler",
+    RNAScope_4plex = "RNAScope_4plex",
+    "RNAScope_3plex+IF" = "RNAScope_3plex+IF"
 )
 
 assay_to_project_name = c(
@@ -78,7 +78,7 @@ EBV_CHANNELS = EBV_ASSAY_TYPES
 # 16
 # PD1
 
-EBV_CHANNELS$phenocycler = c(
+EBV_CHANNELS$Phenocycler = c(
     "DAPI",
     'PAX5',
     'EBNA2',
@@ -96,10 +96,10 @@ EBV_CHANNELS$phenocycler = c(
     "CD20",
     "PD1"
 )
-stopifnot(EBV_CHANNELS$phenocycler[6] == "LMP1")
-stopifnot(EBV_CHANNELS$phenocycler[11] == "CD8")
-stopifnot(EBV_CHANNELS$phenocycler[15] == "CD20")
-stopifnot(EBV_CHANNELS$phenocycler[16] == "PD1")
+stopifnot(EBV_CHANNELS$Phenocycler[6] == "LMP1")
+stopifnot(EBV_CHANNELS$Phenocycler[11] == "CD8")
+stopifnot(EBV_CHANNELS$Phenocycler[15] == "CD20")
+stopifnot(EBV_CHANNELS$Phenocycler[16] == "PD1")
 
 
 # Probe Cocktail
@@ -116,7 +116,7 @@ stopifnot(EBV_CHANNELS$phenocycler[16] == "PD1")
 #
 
 
-EBV_CHANNELS$rnascope_4plex = c(
+EBV_CHANNELS$RNAScope_4plex = c(
     "DAPI",
     "EBER1",
     "EBNA2",
@@ -139,8 +139,7 @@ EBV_CHANNELS$rnascope_4plex = c(
 # 620
 # 690
 
-
-EBV_CHANNELS$`rnascope_3plex+IF` = c(
+EBV_CHANNELS$`RNAScope_3plex+IF` = c(
     "DAPI",
     "EBER",
     "LMP1",
@@ -154,11 +153,11 @@ EBV_CHANNELS$`rnascope_3plex+IF` = c(
 #'
 #' @format A named list with three character elements:
 #' \describe{
-#'   \item{phenocycler}{`"Phenocycler"`}
-#'   \item{rnascope_4plex}{`"RNAScope_4plex"`}
+#'   \item{Phenocycler}{`"Phenocycler"`}
+#'   \item{RNAScope_4plex}{`"RNAScope_4plex"`}
 #'   \item{rnascope_3plex+IF}{`"RNAScope_3plex+IF"`}
 #' }
 #' @examples
-#' EBV_CHANNELS$rnascope_4plex
+#' EBV_CHANNELS$RNAScope_4plex
 #' @export
 EBV_CHANNELS = EBV_CHANNELS

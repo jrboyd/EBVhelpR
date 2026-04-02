@@ -4,7 +4,7 @@
 \alias{load_query_cell_data}
 \title{Load Selected Cell-Level Data For a CellQuery}
 \usage{
-load_query_cell_data(object)
+load_query_cell_data(object, sample_col = "unique_id")
 }
 \arguments{
 \item{object}{A \linkS4class{CellQueryInfo} object.}

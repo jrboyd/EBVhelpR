@@ -7,18 +7,18 @@
     }
 }
 
-.find_tiff_file_by_sample <- function(object, sample_id) {
+.find_tiff_file_by_sample <- function(object, sel_id, sample_col = "unique_id") {
     tiff_df <- get_query_tiff_paths_df(object)
-    sel <- tiff_df[tiff_df$sample_id == sample_id, , drop = FALSE]
+    sel <- tiff_df[tiff_df[[sample_col]] == sel_id, , drop = FALSE]
 
     if (!nrow(sel)) {
-        stop("No matching TIFF found for sample_id: ", sample_id, call. = FALSE)
+        stop("No matching TIFF found for ", sample_col, ": ", sel_id, call. = FALSE)
     }
 
     if (nrow(sel) > 1) {
         warning(
-            "Multiple TIFF files found for sample_id ",
-            sample_id,
+            "Multiple TIFF files found for ", sample_col, " ",
+            sel_id,
             "; using the first one.",
             call. = FALSE
         )
@@ -60,18 +60,18 @@
     )
 }
 
-.find_tiff_file_by_sample <- function(object, sample_id) {
+.find_tiff_file_by_sample <- function(object, sel_id, sample_col = "unique_id") {
     tiff_df <- get_query_tiff_paths_df(object)
-    sel <- tiff_df[tiff_df$sample_id == sample_id, , drop = FALSE]
+    sel <- tiff_df[tiff_df[[sample_col]] == sel_id, , drop = FALSE]
 
     if (!nrow(sel)) {
-        stop("No matching TIFF found for sample_id: ", sample_id, call. = FALSE)
+        stop("No matching TIFF found for ", sample_col, ": ", sel_id, call. = FALSE)
     }
 
     if (nrow(sel) > 1) {
         warning(
-            "Multiple TIFF files found for sample_id ",
-            sample_id,
+            "Multiple TIFF files found for ", sample_col, " ",
+            sel_id,
             "; using the first one.",
             call. = FALSE
         )
@@ -95,7 +95,7 @@
 #' cell_df <- load_query_cell_data(q)
 #' }
 #' @export
-load_query_cell_data <- function(object) {
+load_query_cell_data <- function(object, sample_col = "unique_id") {
     stopifnot(methods::is(object, "CellQueryInfo"))
 
     cell_info_df <- get_query_cell_files_df(object)
@@ -104,23 +104,31 @@ load_query_cell_data <- function(object) {
     }
 
     to_load <- cell_info_df$file
-    names(to_load) <- cell_info_df$sample_id
-    cell_info_df %>% dplyr::select(file, sample_id, probe_control)
+    names(to_load) <- cell_info_df[[sample_col]]
+    # cell_info_df %>% dplyr::select(file, sample_id, probe_control)
 
+    to_verify = cq@tiff_paths_df$tiff_file
+    names(to_verify) = to_load[cq@tiff_paths_df[[sample_col]]]
 
     cell_df_l <- lapply(to_load, function(f) {
-        f <- file.path(get_wrangled_cell_data_dir(), f)
-        df <- readr::read_csv(f, show_col_types = FALSE)
+        full_path <- file.path(get_wrangled_cell_data_dir(), f)
+
+        df <- readr::read_csv(full_path, show_col_types = FALSE, name_repair = "unique_quiet")
         if ("AlgorithmName" %in% colnames(df)) {
             df$AlgorithmName <- NULL
         }
         if ("...1" %in% colnames(df)) {
             df$...1 <- NULL
         }
+
+        img = to_verify[f]
+        img_meta = TiffPlotR::read_tiff_meta_data(img)
+        df = subset(df, YMax < max(img_meta$sizeY))
+        df = subset(df, XMax < max(img_meta$sizeX))
         df
     })
 
-    dplyr::bind_rows(cell_df_l, .id = "sample_id")
+    dplyr::bind_rows(cell_df_l, .id = sample_col)
 }
 
 #' Select Representative Cells Per Sample
@@ -145,10 +153,10 @@ load_query_cell_data <- function(object) {
 #' @export
 select_representative_cells <- function(
         cell_df,
-        marker_col = "Opal520Classification",
+        marker_col = NULL,
         marker_value = 1,
         n_cells = 9,
-        sample_col = "sample_id",
+        sample_col = "unique_id",
         seed = 1
 ) {
     if (methods::is(cell_df, "CellDataStore")) {
@@ -158,7 +166,12 @@ select_representative_cells <- function(
     stopifnot(marker_col %in% colnames(cell_df))
     stopifnot(sample_col %in% colnames(cell_df))
 
-    query_df <- cell_df %>% dplyr::filter(.data[[marker_col]] == marker_value)
+    if(!is.null(marker_col)){
+        query_df <- cell_df
+    }else{
+        query_df <- cell_df %>% dplyr::filter(.data[[marker_col]] == marker_value)
+    }
+
     query_df_l <- split(query_df, query_df[[sample_col]])
 
     set.seed(seed)
@@ -214,7 +227,8 @@ fetch_representative_tiff_images <- function(
         blue_channel = 1,
         annotate_color = "yellow",
         cell_data_store = NULL,
-        background_cell_color = "lightblue"
+        background_cell_color = "lightblue",
+        sample_col = "unique_id"
 ) {
     stopifnot(methods::is(object, "CellQueryInfo"))
     .stop_if_missing_tiffplotr()
@@ -224,8 +238,8 @@ fetch_representative_tiff_images <- function(
     }
 
     if (is.data.frame(sampled_cells)) {
-        stopifnot("sample_id" %in% colnames(sampled_cells))
-        sampled_cells <- split(sampled_cells, sampled_cells$sample_id)
+        stopifnot(sample_col %in% colnames(sampled_cells))
+        sampled_cells <- split(sampled_cells, sampled_cells[[sample_col]])
     }
 
     sample_ids <- names(sampled_cells)
@@ -234,9 +248,9 @@ fetch_representative_tiff_images <- function(
         sample_ids
     )
 
-    image_res <- lapply(sample_ids, function(sample_id) {
-        sample_df <- sampled_cells[[sample_id]]
-        img_file <- image_files[[sample_id]]
+    max_dim_res <- lapply(sample_ids, function(sel_id) {
+        sample_df <- sampled_cells[[sel_id]]
+        img_file <- image_files[[sel_id]]
 
         if (is.na(img_file) || !nrow(sample_df)) {
             return(list())
@@ -249,6 +263,22 @@ fetch_representative_tiff_images <- function(
             sample_df$XMax - sample_df$XMin,
             sample_df$YMax - sample_df$YMin
         ))
+        max_dim
+    })
+    max_dim = max(unlist(max_dim_res))
+
+
+    image_res <- lapply(sample_ids, function(sel_id) {
+        sample_df <- sampled_cells[[sel_id]]
+        img_file <- image_files[[sel_id]]
+
+        if (is.na(img_file) || !nrow(sample_df)) {
+            return(list())
+        }
+
+        n_take <- min(nrow(sample_df), max_images_per_sample)
+        sample_df <- sample_df[seq_len(n_take), , drop = FALSE]
+
         resize_dim <- max_dim * fetch_resize_mult
 
         lapply(seq_len(nrow(sample_df)), function(i) {
@@ -259,13 +289,14 @@ fetch_representative_tiff_images <- function(
                 r_fetch,
                 blue_channel = blue_channel,
                 red_channel = red_channel,
-                green_channel = green_channel
+                green_channel = green_channel,
+                channel_names = EBV_CHANNELS[[object@assay_type]]
             )
 
             # Annotate background cells if cell_data_store is provided
             if (!is.null(cell_data_store)) {
                 full_df <- get_full_cell_data(cell_data_store)
-                background_df <- full_df[full_df$sample_id == sample_id, , drop = FALSE]
+                background_df <- full_df[full_df[[sample_col]] == sel_id, , drop = FALSE]
                 # subset to region around r_fetch
                 background_rects = .rects_from_df(background_df, rect_names = background_df$ObjectId)
                 background_rects = TiffPlotR::rect_test_overlap(background_rects, r_fetch, subset = TRUE)

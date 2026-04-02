@@ -1,4 +1,4 @@
-# Internal IO helpers for phenocycler / RNAscope import workflows.
+# Internal IO helpers for Phenocycler / RNAscope import workflows.
 
 .load_csv <- function(file_path) {
   tryCatch(
