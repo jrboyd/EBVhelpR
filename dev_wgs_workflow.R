@@ -91,9 +91,8 @@ print(p_heat_norm)
 # ggsave("wgs_pileup_heatmap_norm.png", p_heat_norm, width = 6, height = 8)
 load_rnascope_summary_files
 EBV_ASSAY_TYPES$rnascope_4plex
-debug(EBVhelpR::load_rnascope_summary_files)
 rscope_df = EBVhelpR::load_rnascope_summary_files()
-rscope_df %>% dplyr::filter(grepl("CTEBV15", SampleNumber))
+rscope_df %>% dplyr::filter(grepl("CTEBV_15", sample_id))
 
 rscope_df$sample_id
 rscope_df$EBER_status %>% table

@@ -81,9 +81,9 @@ load_rnascope_summary_files <- function(data_dir = NULL) {
       dplyr::mutate(sample_id = sub("GM185022$", "GM18502", sample_id))
 
 
-  rscope_dt$staining_control = "N/A"
-  rscope_dt = rscope_dt %>% dplyr::mutate(staining_control = ifelse(grepl("[Nn]eg", Sample) | grepl("[Nn]eg", SampleNumber), "negative_probe", staining_control))
-  rscope_dt = rscope_dt %>% dplyr::mutate(staining_control = ifelse(grepl("[Pp]os", Sample) | grepl("[Pp]os", SampleNumber), "positive_probe", staining_control))
+  rscope_dt$probe_control = "N/A"
+  rscope_dt = rscope_dt %>% dplyr::mutate(probe_control = ifelse(grepl("[Nn]eg", Sample) | grepl("[Nn]eg", SampleNumber), "negative_probe", probe_control))
+  rscope_dt = rscope_dt %>% dplyr::mutate(probe_control = ifelse(grepl("[Pp]os", Sample) | grepl("[Pp]os", SampleNumber), "positive_probe", probe_control))
   rscope_dt = rscope_dt %>% dplyr::mutate(sample_id = sub("NegCTL", "", sample_id))  %>% dplyr::mutate(sample_id = sub("PosCTL", "", sample_id))
 
   setdiff(rscope_dt$sample_id, meta_df$sample_id)
