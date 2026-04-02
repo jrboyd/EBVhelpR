@@ -21,6 +21,7 @@
 #' S4 class for storing data used during cell-query image retrieval workflows.
 #'
 #' @slot all_cell_files_df Data frame of all available cell files.
+#' @slot meta_data_df Data frame returned by [load_meta_data()].
 #' @slot selected_sample_ids Character vector of selected sample ids.
 #' @slot tiff_paths_df Data frame mapping samples to TIFF image paths.
 #' @slot assay_type Character scalar indicating assay type (for example,
@@ -32,6 +33,7 @@ methods::setClass(
     slots = c(
         summary_df = "data.frame",
         all_cell_files_df = "data.frame",
+        meta_data_df = "data.frame",
         selected_sample_ids = "character",
         tiff_paths_df = "data.frame",
         assay_type = "character"
@@ -41,9 +43,8 @@ methods::setClass(
 
 #' Construct a CellQueryInfo Object
 #'
-#' Builds assay-specific summary, cell file, and TIFF path tables; keeps the
-#' intersection of available sample ids across those sources; and initializes
-#' selection to all remaining sample ids.
+#' Builds assay-specific summary, cell file, and TIFF path tables, and
+#' initializes selection to all sample ids in the cell-file table.
 #'
 #' @param assay_type Character scalar assay type. If `NULL`, defaults to
 #'   `EBV_ASSAY_TYPES$rnascope_4plex`.
@@ -76,29 +77,16 @@ CellQuery <- function(
     tiff_paths_df = get_tiff_file_path_df()
     tiff_paths_df = dplyr::filter(tiff_paths_df, assay == assay_type)
 
-    common_ids = intersect(summary_df$sample_id, all_cell_files_df$sample_id)
-    common_ids = intersect(common_ids, tiff_paths_df$sample_id)
+    meta_data_df <- load_meta_data()
 
-    summary_drop = setdiff(summary_df$sample_id, common_ids)
-    cell_drop = setdiff(all_cell_files_df$sample_id, common_ids)
-    tiff_drop = setdiff(tiff_paths_df$sample_id, common_ids)
-
-    if(length(summary_drop) > 0){
-        warning("dropping ids from summary:\n", paste(summary_drop, collapse = ", "))
-    }
-    if(length(cell_drop) > 0){
-        warning("dropping ids from cell info:\n", paste(cell_drop, collapse = ", "))
-    }
-    if(length(tiff_drop) > 0){
-        warning("dropping ids from tiff paths:\n", paste(tiff_drop, collapse = ", "))
-    }
-
-    summary_df = summary_df %>%
-        dplyr::filter(sample_id %in% common_ids)
-    all_cell_files_df = all_cell_files_df %>%
-        dplyr::filter(sample_id %in% common_ids)
-    tiff_paths_df = tiff_paths_df %>%
-        dplyr::filter(sample_id %in% common_ids)
+    .warn_undocumented_sample_ids(
+        meta_data_df = meta_data_df,
+        dfs = list(
+            summary_df = summary_df,
+            all_cell_files_df = all_cell_files_df,
+            tiff_paths_df = tiff_paths_df
+        )
+    )
 
     selected_sample_ids = all_cell_files_df$sample_id %>% unique
 
@@ -106,6 +94,7 @@ CellQuery <- function(
         "CellQueryInfo",
         summary_df = summary_df,
         all_cell_files_df = all_cell_files_df,
+        meta_data_df = meta_data_df,
         selected_sample_ids = selected_sample_ids,
         tiff_paths_df = tiff_paths_df,
         assay_type = assay_type
@@ -139,6 +128,69 @@ CellQuery <- function(
         return(df[0, , drop = FALSE])
     }
     df[df[[sample_col]] %in% selected_sample_ids, , drop = FALSE]
+}
+
+.warn_undocumented_sample_ids <- function(meta_data_df, dfs) {
+    documented_ids <- .get_sample_ids(meta_data_df)
+    if (!length(documented_ids)) {
+        warning("No metadata sample_id values were found; unable to check for undocumented sample ids.")
+        return(invisible(NULL))
+    }
+
+    for (df_name in names(dfs)) {
+        df_sample_ids <- .get_sample_ids(dfs[[df_name]])
+        undocumented <- setdiff(df_sample_ids, documented_ids)
+        if (length(undocumented)) {
+            warning(
+                "Undocumented sample_id values found in ", df_name, ": ",
+                paste(undocumented, collapse = ", ")
+            )
+        }
+    }
+
+    invisible(NULL)
+}
+
+.limit_query_to_sample_ids <- function(object, sample_ids) {
+    sample_ids <- unique(as.character(sample_ids))
+
+    object@summary_df <- .filter_by_selected_sample_ids(object@summary_df, sample_ids)
+    object@all_cell_files_df <- .filter_by_selected_sample_ids(object@all_cell_files_df, sample_ids)
+    object@tiff_paths_df <- .filter_by_selected_sample_ids(object@tiff_paths_df, sample_ids)
+    object@meta_data_df <- .filter_by_selected_sample_ids(object@meta_data_df, sample_ids)
+    object@selected_sample_ids <- intersect(object@selected_sample_ids, sample_ids)
+    object@selected_sample_ids <- unique(as.character(object@selected_sample_ids))
+
+    methods::validObject(object)
+    object
+}
+
+#' Filter Query Data To Cell-File Sample IDs
+#'
+#' Restricts all stored data frames in a [CellQueryInfo-class] object to
+#' sample ids present in `all_cell_files_df`.
+#'
+#' @param object A [CellQueryInfo-class] object.
+#'
+#' @return Updated [CellQueryInfo-class] object.
+#' @export
+filter_query_to_all_cell_file_samples <- function(object) {
+    stopifnot(methods::is(object, "CellQueryInfo"))
+    .limit_query_to_sample_ids(object, .get_sample_ids(object@all_cell_files_df))
+}
+
+#' Filter Query Data To TIFF-Path Sample IDs
+#'
+#' Restricts all stored data frames in a [CellQueryInfo-class] object to
+#' sample ids present in `tiff_paths_df`.
+#'
+#' @param object A [CellQueryInfo-class] object.
+#'
+#' @return Updated [CellQueryInfo-class] object.
+#' @export
+filter_query_to_tiff_path_samples <- function(object) {
+    stopifnot(methods::is(object, "CellQueryInfo"))
+    .limit_query_to_sample_ids(object, .get_sample_ids(object@tiff_paths_df))
 }
 
 #' Get Summary Rows From CellQueryInfo
@@ -254,6 +306,35 @@ set_selected_sample_ids <- function(object, selected_sample_ids) {
     length(unique(tiff_df[[tiff_col]][sel & has_path]))
 }
 
+.report_sample_overlaps = function(cq){
+    samp_ids.l = list(
+        documented = cq@meta_data_df$sample_id,
+        Summarized = cq@summary_df$sample_id,
+        `Cell Data` = cq@all_cell_files_df$sample_id,
+        `Tiffs Available` = cq@tiff_paths_df$sample_id
+    )
+    samp_ids.l = lapply(samp_ids.l, unique)
+    assayed_ids = unlist(samp_ids.l[-1]) %>% unique
+    perc_assayed = round(100*length(assayed_ids) / length(samp_ids.l$documented), 1)
+
+    .report_overlap = function(x, other){
+        paste0(length(x), " (", round(100*length(x)/length(other), 1), "%)")
+    }
+
+    slot_reports = sapply(samp_ids.l[-1], function(x){
+        .report_overlap(x, assayed_ids)
+    })
+
+    message(length(samp_ids.l$documented), " total documented samples")
+    message(.report_overlap(assayed_ids, samp_ids.l$documented), " have assay data")
+    message("of assayed samples:")
+    for(name in names(slot_reports)){
+        pad_len = max(nchar(slot_reports)) + 2
+        pad = paste(rep(" ", pad_len - nchar(slot_reports[name])), collapse = "")
+        message("  ", slot_reports[name],  pad, ":", name)
+    }
+}
+
 #' Display a CellQueryInfo Summary
 #'
 #' Prints assay name and key counts for total versus selected samples, cells,
@@ -267,25 +348,26 @@ set_selected_sample_ids <- function(object, selected_sample_ids) {
 #' show(q)
 #' @export
 methods::setMethod("show", "CellQueryInfo", function(object) {
-    all_df <- get_query_cell_files_df(object, selected_only = FALSE)
-    sel_df <- get_query_cell_files_df(object, selected_only = TRUE)
-    tiff_df <- get_query_tiff_paths_df(object, selected_only = FALSE)
-    assay <- object@assay_type
-
-    total_samples <- .count_samples(all_df)
-    selected_samples <- length(unique(object@selected_sample_ids))
-    total_cells <- .count_cells(all_df)
-    selected_cells <- .count_cells(sel_df)
-    selected_tiffs <- .count_tiffs_for_samples(tiff_df, object@selected_sample_ids)
-
-    cat("CellQueryInfo\n")
-    cat("  assay:", assay, "\n")
-    cat("  total samples available:", total_samples, "\n")
-    cat("  selected samples:", selected_samples, "\n")
-    cat("  total cells:", total_cells, "\n")
-    cat("  selected cells:", selected_cells, "\n")
-    cat("  tiffs for selected samples:", selected_tiffs, "\n")
-    invisible(object)
+    # all_df <- get_query_cell_files_df(object, selected_only = FALSE)
+    # sel_df <- get_query_cell_files_df(object, selected_only = TRUE)
+    # tiff_df <- get_query_tiff_paths_df(object, selected_only = FALSE)
+    # assay <- object@assay_type
+    #
+    # total_samples <- .count_samples(all_df)
+    # selected_samples <- length(unique(object@selected_sample_ids))
+    # total_cells <- .count_cells(all_df)
+    # selected_cells <- .count_cells(sel_df)
+    # selected_tiffs <- .count_tiffs_for_samples(tiff_df, object@selected_sample_ids)
+    #
+    # cat("CellQueryInfo\n")
+    # cat("  assay:", assay, "\n")
+    # cat("  total samples available:", total_samples, "\n")
+    # cat("  selected samples:", selected_samples, "\n")
+    # cat("  total cells:", total_cells, "\n")
+    # cat("  selected cells:", selected_cells, "\n")
+    # cat("  tiffs for selected samples:", selected_tiffs, "\n")
+    # invisible(object)
+    .report_sample_overlaps(object)
 })
 
 

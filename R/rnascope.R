@@ -193,6 +193,13 @@ load_cell_source_files <- function() {
     dplyr::ungroup()
 
   final_df = dplyr::bind_rows(cell_df.by_type$cohort, cell_df.by_type$control)
+
+  final_df$probe_control = "N/A"
+  final_df = final_df %>% dplyr::mutate(probe_control = ifelse(grepl("[Nn]eg", sample_id), "negative_probe", probe_control))
+  final_df = final_df %>% dplyr::mutate(probe_control = ifelse(grepl("[Pp]os", sample_id), "positive_probe", probe_control))
+
+  final_df$sample_id <- sub("_?NegCTL", "", final_df$sample_id)
+  final_df$sample_id <- sub("_?PosCTL", "", final_df$sample_id)
   final_df$name = NULL
   final_df$project_name <- assay_to_project_name[final_df$assay]
   final_df

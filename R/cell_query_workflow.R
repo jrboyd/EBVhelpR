@@ -105,6 +105,8 @@ load_query_cell_data <- function(object) {
 
     to_load <- cell_info_df$file
     names(to_load) <- cell_info_df$sample_id
+    cell_info_df %>% dplyr::select(file, sample_id, probe_control)
+
 
     cell_df_l <- lapply(to_load, function(f) {
         f <- file.path(get_wrangled_cell_data_dir(), f)

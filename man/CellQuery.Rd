@@ -14,9 +14,8 @@ CellQuery(assay_type = NULL)
 A validated \linkS4class{CellQueryInfo} object.
 }
 \description{
-Builds assay-specific summary, cell file, and TIFF path tables; keeps the
-intersection of available sample ids across those sources; and initializes
-selection to all remaining sample ids.
+Builds assay-specific summary, cell file, and TIFF path tables, and
+initializes selection to all sample ids in the cell-file table.
 }
 \examples{
 q <- CellQuery()

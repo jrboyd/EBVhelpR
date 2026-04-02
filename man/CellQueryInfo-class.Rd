@@ -12,6 +12,8 @@ S4 class for storing data used during cell-query image retrieval workflows.
 \describe{
 \item{\code{all_cell_files_df}}{Data frame of all available cell files.}
 
+\item{\code{meta_data_df}}{Data frame returned by \code{\link[=load_meta_data]{load_meta_data()}}.}
+
 \item{\code{selected_sample_ids}}{Character vector of selected sample ids.}
 
 \item{\code{tiff_paths_df}}{Data frame mapping samples to TIFF image paths.}

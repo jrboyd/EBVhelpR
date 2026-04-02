@@ -4,13 +4,16 @@ library(EBVhelpR)
 #TODO resolve inconsistent behaviors
 # sample_id everywhere
 # source vs assay confusion
-
+write_package_data_for_file
 #### look at example cells ####
-
+# debug(CellQuery)
 cq = CellQuery()
+cq = CellQuery(assay_type = EBV_ASSAY_TYPES$`rnascope_3plex+IF`)
+cq = CellQuery(assay_type = EBV_ASSAY_TYPES$phenocycler)
+cq = CellQuery(assay_type = EBV_ASSAY_TYPES$rnascope_4plex)
 
 set.seed(0)
-sel_ids = cq@summary_df$sample_id %>% unique %>% sample(4)
+sel_ids = cq@tiff_paths_df$sample_id %>% unique %>% sample(4)
 
 # debug(set_selected_sample_ids)
 cq = set_selected_sample_ids(cq, sel_ids)
@@ -20,6 +23,7 @@ cell_df$sample_id %>% table
 cell_df %>% head
 
 cell_df = load_query_cell_data(cq)
+cell_df$sample_id %>% table
 # sampled_cells = select_representative_cells(cell_df)
 
 # Example usage

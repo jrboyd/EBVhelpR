@@ -55,6 +55,7 @@ write_all_package_data = function(){
 #' \dontrun{
 #' write_package_data_for_file("/path/to/ObjectData_Clean.csv")
 #' }
+#' @importFrom readr read_csv
 #' @export
 write_package_data_for_file <- function(file) {
   f_group <- .group_image_files(file)
@@ -62,13 +63,13 @@ write_package_data_for_file <- function(file) {
   dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
 
   out_meta_file <- file.path(out_dir, paste0("metadata_", basename(file)))
-  if (file.exists(out_meta_file)) {
-    message("metadata file already exists, skipping: ", out_meta_file)
-    return(invisible(out_meta_file))
-  }
+  # if (file.exists(out_meta_file)) {
+  #   message("metadata file already exists, skipping: ", out_meta_file)
+  #   return(invisible(out_meta_file))
+  # }
 
   message("reading input file ", file)
-  obj_dat <- read.csv(file)
+  obj_dat <- readr::read_csv(file)
 
   single_tons <- vapply(obj_dat, function(x) length(unique(x)) == 1L, logical(1))
   obj_singletons <- unique(obj_dat[, single_tons, drop = FALSE])
@@ -76,7 +77,8 @@ write_package_data_for_file <- function(file) {
 
   possible_image_loc_vars = c(
     "ImageLocation",
-    "Image.Location"
+    "Image.Location",
+    "Image Location"
   )
   loc_var_found = FALSE
   for(loc_var in possible_image_loc_vars){
@@ -118,11 +120,16 @@ write_package_data_for_file <- function(file) {
   names(obj_dat.by_image) <- obj_names[names(obj_dat.by_image)]
 
   for (name in img_meta_df$image_name) {
+      out_f = file.path(out_dir, paste0(name, ".cell_data.csv"))
+      if(file.exists(out_f)){
+          message( name, " skipped")
+          next
+      }
     message("writing ", name)
     obj_dat.sel <- obj_dat.by_image[[name]]
     obj_dat.sel$ImageLocation <- NULL
     obj_dat.sel$image_name <- name
-    write.csv(obj_dat.sel, file.path(out_dir, paste0(name, ".cell_data.csv")))
+    readr::write_csv(obj_dat.sel, out_f)
   }
 
   write.csv(img_meta_df, out_meta_file)
@@ -146,74 +153,81 @@ get_tiff_file_path_df = function(){
     }
     if(!dir.exists(tiff_dir)){
         warning("Could not locate TIFF root directory. Returning example tiffs with fake paths.")
-        out_df = .get_example_images_df()
-        out_df$project_name = out_df$assay
-        out_df$assay = project_name_to_assay[out_df$project_name]
-        return(out_df)
+        tiff_df = .get_example_images_df()
+        tiff_df$project_name = tiff_df$assay
+        tiff_df$assay = project_name_to_assay[tiff_df$project_name]
+    }else{
+        dir_names = dir(tiff_dir)
+        stopifnot(all(.get_valid_project_names() %in% dir_names))
+        dir_names = .get_valid_project_names()
+        names(dir_names) = dir_names
+        tiff_files.by_project = lapply(dir_names, function(d){
+            files = dir(file.path(tiff_dir, d), recursive = TRUE, pattern = "tiff?$", full.names = TRUE)
+            data.frame(tiff_file = files)
+        })
+        tiff_df = dplyr::bind_rows(tiff_files.by_project, .id = "assay")
+
+        tiff_df = tiff_df %>% dplyr::mutate(name = basename(tiff_file))
+        tiff_df = tiff_df %>%
+            dplyr::mutate(name = sub("\\..+", "", name)) %>%
+            dplyr::mutate(name = sub("^[0-9]{3}_", "", name)) %>%
+            dplyr::mutate(name = sub("_ ?croo?p?ped$", "", name)) %>%
+            dplyr::mutate(name = gsub("-", "_", name))
+
+        tiff_df = tiff_df %>%
+            dplyr::mutate(name = ifelse(
+                grepl("D_EB.+D_EB", name),
+                sub("_D", " D", name),
+                name
+            ))
+        tiff_df = tiff_df %>%
+            dplyr::mutate(name = ifelse(
+                grepl("CTEBV.+CTEBV", name),
+                sub("_CTEBV", " CTEBV", name),
+                name
+            ))
+
+        tiff_df = tiff_df %>% dplyr::group_by(assay, tiff_file) %>% dplyr::reframe(name = strsplit(name, " ")[[1]])
+        tiff_df = tiff_df %>%
+            dplyr::mutate(name = ifelse(
+                grepl("CTEBV[0-9]", name),
+                sub("CTEBV", "CTEBV_", name),
+                name
+            ))
+        .cp_name = function(x){
+            x = sub("_2$", "", x)
+            x = sub("Chiung", "Chung", x)
+            cells = sapply(strsplit(x, "_"), function(x)x[length(x)])
+            is_control = grepl("NegCTL", x) | grepl("Control", x)
+            x[is_control]
+            x[!is_control]
+            control_group = ifelse(is_control, "NegCTL", "PosCTL")
+            paste(cells, control_group, sep = '_')
+        }
+        tiff_df = tiff_df %>%
+            dplyr::mutate(name = ifelse(
+                grepl("CellPellet", name),
+                .cp_name(name),
+                name
+            ))
+
+        tiff_df = tiff_df %>%
+            dplyr::mutate(name = sub("2468_", "", name)) %>%
+            dplyr::mutate(name = sub("_Rescanned_Cropped", "", name))
+
+        tiff_df$sample_id = tiff_df$name
+        tiff_df$name = NULL
+
+        tiff_df$project_name = tiff_df$assay
+        tiff_df$assay = project_name_to_assay[tiff_df$project_name]
     }
-    dir_names = dir(tiff_dir)
-    stopifnot(all(.get_valid_project_names() %in% dir_names))
-    dir_names = .get_valid_project_names()
-    names(dir_names) = dir_names
-    tiff_files.by_project = lapply(dir_names, function(d){
-        files = dir(file.path(tiff_dir, d), recursive = TRUE, pattern = "tiff?$", full.names = TRUE)
-        data.frame(tiff_file = files)
-    })
-    tiff_df = dplyr::bind_rows(tiff_files.by_project, .id = "assay")
 
-    tiff_df = tiff_df %>% dplyr::mutate(name = basename(tiff_file))
-    tiff_df = tiff_df %>%
-        dplyr::mutate(name = sub("\\..+", "", name)) %>%
-        dplyr::mutate(name = sub("^[0-9]{3}_", "", name)) %>%
-        dplyr::mutate(name = sub("_ ?croo?p?ped$", "", name)) %>%
-        dplyr::mutate(name = gsub("-", "_", name))
+    tiff_df$probe_control = "N/A"
+    tiff_df = tiff_df %>% dplyr::mutate(probe_control = ifelse(grepl("[Nn]eg", sample_id), "negative_probe", probe_control))
+    tiff_df = tiff_df %>% dplyr::mutate(probe_control = ifelse(grepl("[Pp]os", sample_id), "positive_probe", probe_control))
 
-    tiff_df = tiff_df %>%
-        dplyr::mutate(name = ifelse(
-            grepl("D_EB.+D_EB", name),
-            sub("_D", " D", name),
-            name
-        ))
-    tiff_df = tiff_df %>%
-        dplyr::mutate(name = ifelse(
-            grepl("CTEBV.+CTEBV", name),
-            sub("_CTEBV", " CTEBV", name),
-            name
-        ))
-
-    tiff_df = tiff_df %>% dplyr::group_by(assay, tiff_file) %>% dplyr::reframe(name = strsplit(name, " ")[[1]])
-    tiff_df = tiff_df %>%
-        dplyr::mutate(name = ifelse(
-            grepl("CTEBV[0-9]", name),
-            sub("CTEBV", "CTEBV_", name),
-            name
-        ))
-    .cp_name = function(x){
-        x = sub("_2$", "", x)
-        x = sub("Chiung", "Chung", x)
-        cells = sapply(strsplit(x, "_"), function(x)x[length(x)])
-        is_control = grepl("NegCTL", x) | grepl("Control", x)
-        x[is_control]
-        x[!is_control]
-        control_group = ifelse(is_control, "NegCTL", "PosCTL")
-        paste(cells, control_group, sep = '_')
-    }
-    tiff_df = tiff_df %>%
-        dplyr::mutate(name = ifelse(
-            grepl("CellPellet", name),
-            .cp_name(name),
-            name
-        ))
-
-    tiff_df = tiff_df %>%
-        dplyr::mutate(name = sub("2468_", "", name)) %>%
-        dplyr::mutate(name = sub("_Rescanned_Cropped", "", name))
-
-    tiff_df$sample_id = tiff_df$name
-    tiff_df$name = NULL
-
-    tiff_df$project_name = tiff_df$assay
-    tiff_df$assay = project_name_to_assay[tiff_df$project_name]
+    tiff_df$sample_id <- sub("_?NegCTL", "", tiff_df$sample_id)
+    tiff_df$sample_id <- sub("_?PosCTL", "", tiff_df$sample_id)
 
     tiff_df
 }
