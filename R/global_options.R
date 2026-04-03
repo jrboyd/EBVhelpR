@@ -7,7 +7,7 @@
 #' \describe{
 #'   \item{Phenocycler}{`"Phenocycler"`}
 #'   \item{RNAScope_4plex}{`"RNAScope_4plex"`}
-#'   \item{rnascope_3plex+IF}{`"RNAScope_3plex+IF"`}
+#'   \item{RNAScope_3plex+IF}{`"RNAScope_3plex+IF"`}
 #' }
 #' @examples
 #' EBV_ASSAY_TYPES$RNAScope_4plex
@@ -155,7 +155,7 @@ EBV_CHANNELS$`RNAScope_3plex+IF` = c(
 #' \describe{
 #'   \item{Phenocycler}{`"Phenocycler"`}
 #'   \item{RNAScope_4plex}{`"RNAScope_4plex"`}
-#'   \item{rnascope_3plex+IF}{`"RNAScope_3plex+IF"`}
+#'   \item{RNAScope_3plex+IF}{`"RNAScope_3plex+IF"`}
 #' }
 #' @examples
 #' EBV_CHANNELS$RNAScope_4plex

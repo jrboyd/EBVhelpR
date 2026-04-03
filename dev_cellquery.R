@@ -90,6 +90,7 @@ tiff_sample[[2]][[1]]
 tiff_sample[[2]][[2]]
 tiff_sample[[3]][[2]]
 tiff_sample[[4]][[2]]
+names(tiff_sample)
 
 library(ggplot2)
 tiff_s = tiff_sample[[1]]

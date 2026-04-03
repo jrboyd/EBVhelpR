@@ -261,7 +261,8 @@ get_query_summary_df <- function(object, selected_only = TRUE) {
     if (!selected_only) {
         return(object@summary_df)
     }
-    .filter_by_selected_sample_ids(object@summary_df, object@selected_sample_ids)
+    .filter_by_selected_sample_ids(object@summary_df, object@selected_sample_ids) %>%
+        .filter_by_selected_sample_ids(., object@selected_unique_ids, sample_col = "unique_id")
 }
 
 #' Get Cell File Rows From CellQueryInfo
@@ -279,7 +280,8 @@ get_query_cell_files_df <- function(object, selected_only = TRUE) {
     if (!selected_only) {
         return(object@all_cell_files_df)
     }
-    .filter_by_selected_sample_ids(object@all_cell_files_df, object@selected_unique_ids, sample_col = "unique_id")
+    .filter_by_selected_sample_ids(object@all_cell_files_df, object@selected_unique_ids, sample_col = "unique_id") %>%
+        .filter_by_selected_sample_ids(., object@selected_unique_ids, sample_col = "unique_id")
 }
 
 #' Get TIFF Path Rows From CellQueryInfo
@@ -297,7 +299,8 @@ get_query_tiff_paths_df <- function(object, selected_only = TRUE) {
     if (!selected_only) {
         return(object@tiff_paths_df)
     }
-    .filter_by_selected_sample_ids(object@tiff_paths_df, object@selected_sample_ids)
+    .filter_by_selected_sample_ids(object@tiff_paths_df, object@selected_sample_ids) %>%
+        .filter_by_selected_sample_ids(., object@selected_unique_ids, sample_col = "unique_id")
 }
 
 #' Set Selected Sample IDs

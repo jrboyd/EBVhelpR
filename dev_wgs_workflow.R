@@ -1,18 +1,22 @@
 library(EBVhelpR)
 library(ggplot2)
-
+library(tidyverse)
 # Example WGS workflow using EBVhelpR helper functions.
 # Update `wgs_root_dir` to your local WGS analysis directory if needed.
 # Set to NULL to use package defaults.
 wgs_root_dir <- NULL
 
 meta_df <- load_meta_data()
+colors_EBER_status = get_colors_EBER_status()
 
 # 1) Build WGS file index and reference ranges.
 wgs_files_df <- setup_wgs_files(
   wgs_root_dir = wgs_root_dir,
   meta_df = meta_df
 )
+
+#remove Not Performed sample
+wgs_files_df = wgs_files_df %>% filter(EBER_status %in% c("Positive", "Negative"))
 
 genome_gr <- load_wgs_reference_genome()
 
@@ -33,29 +37,42 @@ pileup_df <- load_wgs_bigwig_pileup(
 )
 
 # 4) Make core WGS plots.
-p_enrichment <- plot_wgs_viral_enrichment(wgs_count_summary)
-p_reads <- plot_wgs_viral_reads(wgs_count_summary)
+p_enrichment <- plot_wgs_viral_enrichment(wgs_count_summary) +
+    scale_fill_manual(values = colors_EBER_status) +
+    scale_color_manual(values = colors_EBER_status) +
+    theme(axis.text.y = element_text(hjust = 0, size = 8))
+# p_reads <- plot_wgs_viral_reads(wgs_count_summary)
 p_lines <- plot_wgs_pileup_lines(pileup_df, ylim = c(0, 2000))
 p_lines_zoom <- plot_wgs_pileup_lines(pileup_df, ylim = c(0, 20))
 p_heat <- plot_wgs_pileup_heatmap(
     pileup_df = pileup_df,
     wgs_count_summary = wgs_count_summary,
-    normalize_by_sample = FALSE
-)
+    normalize_by_sample = FALSE,
+    status_colors = colors_EBER_status
+) +
+    scale_fill_viridis_c() +
+    theme(axis.text.y = element_text(hjust = 0, size = 8))
+p_heat
 p_heat_norm <- plot_wgs_pileup_heatmap(
     pileup_df = pileup_df,
     wgs_count_summary = wgs_count_summary,
-    normalize_by_sample = TRUE
-)
+    normalize_by_sample = TRUE,
+    status_colors = colors_EBER_status
+) +
+    scale_fill_viridis_c() +
+    theme(axis.text.y = element_text(hjust = 0, size = 8))
+p_heat_norm
 
-colors_EBER_status = seqsetvis::safeBrew(wgs_count_summary$EBER_status)
-colors_EBER_status = as.list(colors_EBER_status)
-colors_EBER_status$Negative = "cornflowerblue"
-colors_EBER_status$`Not performed` = "palegreen"
-colors_EBER_status$Positive = "coral"
-saveRDS(colors_EBER_status, "inst/extdata/colors_EBER_status.Rds")
+# colors_EBER_status = seqsetvis::safeBrew(wgs_count_summary$EBER_status)
+# colors_EBER_status = as.list(colors_EBER_status)
+# colors_EBER_status$Negative = "cornflowerblue"
+# colors_EBER_status$`Not performed` = "palegreen"
+# colors_EBER_status$Positive = "coral"
+# saveRDS(colors_EBER_status, "inst/extdata/colors_EBER_status.Rds")
 
-head(wgs_count_summary)
+
+# head(wgs_count_summary)
+# wgs_count_summary = wgs_count_summary %>% filter(EBER_status != "Not performed")
 
 theme_set(ggpubr::theme_pubr())
 

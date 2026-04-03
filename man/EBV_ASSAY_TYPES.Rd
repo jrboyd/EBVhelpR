@@ -9,7 +9,7 @@ A named list with three character elements:
 \describe{
 \item{Phenocycler}{\code{"Phenocycler"}}
 \item{RNAScope_4plex}{\code{"RNAScope_4plex"}}
-\item{rnascope_3plex+IF}{\code{"RNAScope_3plex+IF"}}
+\item{RNAScope_3plex+IF}{\code{"RNAScope_3plex+IF"}}
 }
 }
 \usage{
