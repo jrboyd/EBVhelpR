@@ -167,7 +167,7 @@ load_cell_source_files <- function() {
     cell_df.by_type$cohort <- merge(cell_df.by_type$cohort, meta_df, all.x = TRUE)
 
     warning("removing D_EB_12_D_EB_33_Scan5, multiple samples in same image")
-    cell_df.by_type$cohort = cell_df.by_type$cohort %>% subset(!grepl("D_EB_12_D_EB_33", name))
+    cell_df.by_type$cohort = cell_df.by_type$cohort %>% dplyr::filter(!grepl("D_EB_12_D_EB_33", name))
 
     valid = cell_df.by_type$cohort$sample_id %in% meta_df$sample_id
     cell_df.by_type$cohort[!valid,]
