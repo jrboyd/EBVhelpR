@@ -161,3 +161,34 @@ EBV_CHANNELS$`RNAScope_3plex+IF` = c(
 #' EBV_CHANNELS$RNAScope_4plex
 #' @export
 EBV_CHANNELS = EBV_CHANNELS
+
+
+EBV_OPAL_DECODE = EBV_ASSAY_TYPES
+EBV_OPAL_DECODE$Phenocycler = NULL
+EBV_OPAL_DECODE$RNAScope_4plex = c(
+    Opal520 = "EBER",
+    Opal620 = "EBNA2",
+    Opal570 = "LMP1",
+    Opal690 = "EBNA3"
+)
+EBV_OPAL_DECODE$`RNAScope_3plex+IF` = c(
+    Opal520 = "EBER",
+    Opal620 = "EBNA1",
+    Opal570 = "LMP1",
+    Opal690 = "EBNA1-Ab"
+)
+
+
+#' Named by OpalDye string and value are targets
+#'
+#' Named list of channel names.
+#'
+#' @format A named list with three character elements:
+#' \describe{
+#'   \item{RNAScope_4plex}{`"RNAScope_4plex"`}
+#'   \item{RNAScope_3plex+IF}{`"RNAScope_3plex+IF"`}
+#' }
+#' @examples
+#' EBV_OPAL_DECODE$RNAScope_4plex
+#' @export
+EBV_OPAL_DECODE = EBV_OPAL_DECODE

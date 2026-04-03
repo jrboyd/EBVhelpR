@@ -2,12 +2,10 @@
 % Please edit documentation in R/data_wrangling.R
 \name{get_tiff_file_path_df}
 \alias{get_tiff_file_path_df}
-\title{.get_valid_project_names = EBVhelpR:::.get_valid_project_names
-.get_example_images_df = EBVhelpR:::.get_example_images_df}
+\title{Title}
 \usage{
 get_tiff_file_path_df()
 }
 \description{
-.get_valid_project_names = EBVhelpR:::.get_valid_project_names
-.get_example_images_df = EBVhelpR:::.get_example_images_df
+Title
 }

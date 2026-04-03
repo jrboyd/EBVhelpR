@@ -144,8 +144,13 @@ write_package_data_for_file <- function(file) {
     tiff_df
 }
 
-#' .get_valid_project_names = EBVhelpR:::.get_valid_project_names
-#' .get_example_images_df = EBVhelpR:::.get_example_images_df
+
+#' Title
+#'
+#' @returns
+#' @export
+#'
+#' @examples
 get_tiff_file_path_df = function(){
     win_dir = "Z:/FUSION DATA/AshleyVolaric"
     win_dir2 = "C:/Users/boydj/project_data/EBV_image_files"
