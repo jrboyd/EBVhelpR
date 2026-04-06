@@ -12,7 +12,12 @@ library(tidyverse)
 # 05 final select of scope data for cell viewing
 # 06 correlation of scope data with WGS
 
-res_dir = "output_presentation_04092026_v2"
+#version 3 changes
+#no combo plots
+#phenocycler : just ebna/lmp variants
+# viral genome position with highlights for EBER, LMP1, EBNA2, EBNA3
+
+res_dir = "output_presentation_04092026_v3"
 res_file = function(f){
     f = file.path(dirname(f), paste0(plot_group, "_", f))
     out_f = file.path(res_dir, f)
@@ -49,6 +54,30 @@ wgs_files_df <- setup_wgs_files(
 wgs_files_df = wgs_files_df %>% filter(EBER_status %in% c("Positive", "Negative"))
 
 genome_gr <- load_wgs_reference_genome()
+viral_genes_gr = rtracklayer::import.gff("inst/extdata/NC_007605.1_gene_reference.gff3")
+
+# viral_genes_gr = subset(viral_genes_gr, type == "gene")
+viral_genes_df = viral_genes_gr %>% as.data.frame
+viral_genes_df = viral_genes_df %>% mutate(gene = ifelse(grepl("EBER", product), sub(" .+", "", product), gene))
+
+tmp1 = viral_genes_df %>% filter(grepl("EBER", product) & type == "transcript")
+tmp2 = viral_genes_df %>% filter((grepl("EBNA.+[0-9].?", gene) | grepl("LMP", gene)) & type == "exon")
+viral_genes_df.highlight = rbind(tmp1, tmp2)
+
+
+viral_genes_df.highlight = viral_genes_df.highlight %>% mutate(gene = ifelse(grepl("EBER", product), sub(" .+", "", product), gene))
+viral_genes_df.highlight$gene %>% table
+viral_genes_label = viral_genes_df.highlight %>% group_by(gene) %>% summarise(x = mean(start+end)/2)
+
+subset(viral_genes_df, gene == "EBER-1")
+
+subset(viral_genes_df.highlight, width < 1e4)
+
+p_ref = ggplot(viral_genes_df) +
+    geom_segment(linewidth = 1.2, aes(x = start, xend = end, y = 0, yend = 0)) +
+    geom_segment(data = viral_genes_df.highlight, color = "red", linewidth = 3, aes(x = start, xend = end, y = 0, yend = 0)) +
+    ggrepel::geom_label_repel(data = viral_genes_label, aes(x = x, y = 0, label = gene))
+p_ref + coord_cartesian(xlim = c(0, 1e4))
 
 # 2) Compute host/viral read summary metrics.
 wgs_count_summary <- load_wgs_count_summary(
