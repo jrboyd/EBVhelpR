@@ -144,6 +144,7 @@ EBV_CHANNELS$`RNAScope_3plex+IF` = c(
     "EBER",
     "LMP1",
     "EBNA1",
+    "EBNA1-Ab",
     "Autofluoresence"
 )
 

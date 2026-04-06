@@ -1,12 +1,27 @@
+library(TiffPlotR)
+library(EBVhelpR)
+library(tidyverse)
+
 cq_r4 = readRDS("output_presentation_04092026_v2/05_cq_r4.Rds")
 cq_r3i = readRDS("output_presentation_04092026_v2/05_cq_r3i.Rds")
 cq_r3i@summary_df %>% head
 cq_r3i@all_cell_files_df$file
 
+
+
 cq = cq_r3i
+#update tiff paths to locally available
+local_tiff_df = EBVhelpR:::get_tiff_file_path_df()
+local_tiff_df = EBVhelpR:::.df_prep(local_tiff_df)
+cq@tiff_paths_df = local_tiff_df
+cq@tiff_paths_df = cq@tiff_paths_df %>% filter(unique_id %in% cq@selected_unique_ids) %>% filter(assay %in% cq@assay_type)
+
 assay_name = cq@assay_type
 
+
+
 cq = filter_query_to_tiff_path_samples(cq)
+
 qsum = get_query_summary_df(cq)
 qcell_files = get_query_cell_files_df(cq)
 qtiff = get_query_tiff_paths_df(cq)
@@ -23,12 +38,13 @@ stopifnot(length(tiff_f) == 1)
 
 cell_df = cell_df %>% mutate(x = (XMin + XMax)/2, y = (YMin + YMax)/2)
 
-library(TiffPlotR)
+
 img_info = read_tiff_meta_data(tiff_f)
 max_x = max(img_info$sizeX)
 max_y = max(img_info$sizeY)
 min_dim = min(max_x, max_y)
 
+# debug(fetchTiffData.rgb)
 img_res = fetchTiffData.rgb(tiff_path = tiff_f, channel_names = EBV_CHANNELS[[assay_name]], blue_channel = 1, red_channel = 6, green_channel = 2)
 tp = sample(nrow(cell_df), 1e3)
 p1 = img_res@plots$rgb
@@ -36,6 +52,16 @@ p2 = img_res@plots$rgb +
     annotate("point", x= cell_df$x[tp], y = cell_df$y[tp], color = "magenta") +
     coord_fixed()
 pg_validate = cowplot::plot_grid(p1, p2)
+pg_validate
+
+img_res = fetchTiffData.rgb(tiff_path = tiff_f, channel_names = EBV_CHANNELS[[assay_name]], blue_channel = 1, red_channel = 6, green_channel = 2, rect = TiffRect(2e4, 3e4, 0, 1e4))
+tp = sample(nrow(cell_df), 1e3)
+p1 = img_res@plots$rgb
+p2 = img_res@plots$rgb +
+    annotate("point", x= cell_df$x[tp], y = cell_df$y[tp], color = "magenta") +
+    coord_fixed(xlim = c(2e4, 3e4), ylim = c(0, 1e4))
+pg_validate = cowplot::plot_grid(p1, p2)
+pg_validate
 
 #### look at high density area ####
 cell_target = 50
