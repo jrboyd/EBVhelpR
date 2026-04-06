@@ -54,12 +54,14 @@ p2 = img_res@plots$rgb +
 pg_validate = cowplot::plot_grid(p1, p2)
 pg_validate
 
-img_res = fetchTiffData.rgb(tiff_path = tiff_f, channel_names = EBV_CHANNELS[[assay_name]], blue_channel = 1, red_channel = 6, green_channel = 2, rect = TiffRect(2e4, 3e4, 0, 1e4))
-tp = sample(nrow(cell_df), 1e3)
-p1 = img_res@plots$rgb
+zr = TiffRect(0e4, 6e4, 2.5e3, 1e4)
+img_res = fetchTiffData.rgb(tiff_path = tiff_f, channel_names = EBV_CHANNELS[[assay_name]], blue_channel = 1, red_channel = 6, green_channel = 2, rect = zr)
+tp = sample(nrow(cell_df), 10e3)
+p1 = img_res@plots$rgb +
+    coord_fixed(xlim = c(zr@coords$xmin, zr@coords$xmax), ylim = c(zr@coords$ymin, zr@coords$ymax))
 p2 = img_res@plots$rgb +
     annotate("point", x= cell_df$x[tp], y = cell_df$y[tp], color = "magenta") +
-    coord_fixed(xlim = c(2e4, 3e4), ylim = c(0, 1e4))
+    coord_fixed(xlim = c(zr@coords$xmin, zr@coords$xmax), ylim = c(zr@coords$ymin, zr@coords$ymax))
 pg_validate = cowplot::plot_grid(p1, p2)
 pg_validate
 
