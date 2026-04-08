@@ -63,7 +63,7 @@ pf_saveplot <- function(ctx, plot, name, width, height) {
 
 pf_select_scope_ids <- function(cq, valid_statuses, valid_types) {
     sel <- cq@summary_df %>%
-        subset(sample_type == "patient" & probe_control == "" & EBER_status %in% valid_statuses & sample_type %in% valid_types)
+        subset(probe_control == "" & EBER_status %in% valid_statuses & sample_type %in% valid_types)
     unique(as.character(sel$unique_id))
 }
 
@@ -93,13 +93,12 @@ pf_section_wgs_setup <- function(ctx) {
         dplyr::group_by(gene) %>%
         dplyr::summarise(x = mean(start + end) / 2, .groups = "drop")
 
-    p_ref <- ggplot2::ggplot(viral_genes_df) +
-        ggplot2::geom_segment(ggplot2::aes(x = start, xend = end, y = 0, yend = 0), linewidth = 1.2) +
-        ggplot2::geom_segment(data = viral_genes_df.highlight, ggplot2::aes(x = start, xend = end, y = 0, yend = 0), color = "red", linewidth = 3) +
-        ggrepel::geom_label_repel(data = viral_genes_label, ggplot2::aes(x = x, y = 0, label = gene))
+    ctx$viral_genes_df = viral_genes_df
+    ctx$viral_genes_df.highlight = viral_genes_df.highlight
+    ctx$viral_genes_plot = plot_viral_gene_ref(ctx$viral_genes_df, ctx$viral_genes_df.highlight$gene)
 
     pf_increase_plot_group(ctx)
-    pf_saveplot(ctx, p_ref, "ebv_reference_highlights", width = 10, height = 3)
+    pf_saveplot(ctx, ctx$viral_genes_plot, "ebv_reference_highlights", width = 8.15, height = 2.65)
 
     ctx$wgs_count_summary <- load_wgs_count_summary(
         wgs_files_df = ctx$wgs_files_df,
@@ -133,8 +132,30 @@ pf_section_wgs_initial_plots <- function(ctx) {
         ggplot2::theme(axis.text.y = ggplot2::element_text(hjust = 0, size = 8))
 
     p_lines <- plot_wgs_pileup_lines(ctx$pileup_df, ylim = c(0, 2000))
-    p_lines_zoom <- plot_wgs_pileup_lines(ctx$pileup_df, ylim = c(0, 20))
-    pg_lines <- cowplot::plot_grid(p_lines, p_lines_zoom, nrow = 1)
+
+    xrng = range(ctx$pileup_df$x)
+
+    append_viral_reference = function(in_plot,
+                                      ctx,
+                                      rel_heights,
+                                      yrng){
+        plist = seqsetvis:::sync_height(list(
+            in_plot + coord_cartesian(xlim = xrng, ylim = yrng) +
+                ggplot2::scale_x_continuous(labels = function(x) x / 1000) +
+                ggplot2::labs(x = "EBV genomic position (kb)") +
+                labs(x = "") + theme(axis.text.x = element_blank()),
+            ctx$viral_genes_plot + coord_cartesian(xlim = xrng)
+        ), sync_width = TRUE)
+        cowplot::plot_grid(plotlist = plist, ncol = 1, rel_heights = rel_heights)
+
+    }
+
+    pg_lines.2k = append_viral_reference(p_lines, ctx, c(2, 1.5), c(0, 2000))
+    pg_lines.zoom = append_viral_reference(p_lines, ctx, c(2, 1.5), c(0, 20))
+
+
+
+    pg_lines <- cowplot::plot_grid(pg_lines.2k, pg_lines.zoom, nrow = 1)
 
     p_heat <- plot_wgs_pileup_heatmap(
         pileup_df = ctx$pileup_df,
@@ -154,11 +175,14 @@ pf_section_wgs_initial_plots <- function(ctx) {
         ggplot2::scale_fill_viridis_c() +
         ggplot2::theme(axis.text.y = ggplot2::element_text(hjust = 0, size = 8))
 
+    p_heat = append_viral_reference(p_heat, ctx, rel_heights = c(3, 1), yrng = NULL)
+    p_heat_norm = append_viral_reference(p_heat_norm, ctx, rel_heights = c(3, 1), yrng = NULL)
+
     pf_increase_plot_group(ctx)
     pf_saveplot(ctx, p_enrichment, "wgs_enrichment_barplot", width = 11, height = 8)
-    pf_saveplot(ctx, pg_lines, "wgs_profiles_lineplot", width = 11, height = 8)
-    pf_saveplot(ctx, p_heat, "wgs_profiles_heatmap", width = 11, height = 8)
-    pf_saveplot(ctx, p_heat_norm, "wgs_profiles_heatmap_normalized", width = 11, height = 8)
+    pf_saveplot(ctx, pg_lines, "wgs_profiles_lineplot", width = 12.7, height = 6.2)
+    pf_saveplot(ctx, p_heat, "wgs_profiles_heatmap", width = 11, height = 8+3)
+    pf_saveplot(ctx, p_heat_norm, "wgs_profiles_heatmap_normalized", width = 11, height = 8+3)
 
     invisible(ctx)
 }
@@ -311,7 +335,17 @@ pf_section_scope_summary_plots <- function(ctx) {
     pos_p <- merge(ctx$meta_df, pos_p)
     pos_p$sample_id <- factor(pos_p$sample_id, levels = ctx$id_levels)
 
+    pos_p.ebv = subset(pos_p %>% filter(grepl("(LMP)|(EBN)", name)))
+
     p_sum_bars_p <- ggplot2::ggplot(pos_p, ggplot2::aes(x = value, y = sample_id, fill = EBER_status)) +
+        ggplot2::geom_col() +
+        ggplot2::facet_wrap(~name, scales = "free_x", nrow = 2) +
+        ggplot2::scale_fill_manual(values = ctx$colors_EBER_status) +
+        ggplot2::scale_x_continuous(breaks = scales::pretty_breaks(2)) +
+        ggplot2::labs(x = "Percent Positive", y = "", fill = "EBER status") +
+        ggplot2::theme(axis.text.y = ggplot2::element_text(size = 8), axis.text.x = ggplot2::element_text(size = 8))
+
+    p_sum_bars_p.ebv = ggplot2::ggplot(pos_p.ebv, ggplot2::aes(x = value, y = sample_id, fill = EBER_status)) +
         ggplot2::geom_col() +
         ggplot2::facet_wrap(~name, scales = "free_x", nrow = 2) +
         ggplot2::scale_fill_manual(values = ctx$colors_EBER_status) +
@@ -325,14 +359,23 @@ pf_section_scope_summary_plots <- function(ctx) {
         ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 45, hjust = 1, vjust = 1)) +
         ggplot2::labs(y = "Percent Positive", x = "Probe", fill = "EBER status")
 
+    p_sum_box_p.ebv = ggplot2::ggplot(pos_p.ebv, ggplot2::aes(x = name, y = value, fill = EBER_status)) +
+        ggplot2::geom_boxplot() +
+        ggplot2::scale_fill_manual(values = ctx$colors_EBER_status) +
+        ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 45, hjust = 1, vjust = 1)) +
+        ggplot2::labs(y = "Percent Positive", x = "Probe", fill = "EBER status")
+
     pf_increase_plot_group(ctx)
     pf_saveplot(ctx, p_sum_bars_r4, name = "RNAScope_4plex_barplot", width = 11, height = 7.2)
     pf_saveplot(ctx, p_sum_bars_r3i, name = "RNAScope_3plexIF_barplot", width = 11, height = 7.2)
-    pf_saveplot(ctx, p_sum_bars_p, name = "Phenocycler_barplot", width = 11, height = 8.3)
+    pf_saveplot(ctx, p_sum_bars_p, name = "Phenocycler_barplot.all_probes", width = 11, height = 8.3)
+    pf_saveplot(ctx, p_sum_bars_p.ebv, name = "Phenocycler_barplot", width = 5.4, height = 4.5)
 
     pf_saveplot(ctx, p_sum_box_r4, name = "RNAScope_4plex_boxplot", width = 8.4, height = 5)
     pf_saveplot(ctx, p_sum_box_r3i, name = "RNAScope_3plexIF_boxplot", width = 8.4, height = 5)
-    pf_saveplot(ctx, p_sum_box_p, name = "Phenocycler_boxplot", width = 7.5, height = 6.4)
+    pf_saveplot(ctx, p_sum_box_p, name = "Phenocycler_boxplot.all_probes", width = 7.5, height = 6.4)
+    pf_saveplot(ctx, p_sum_box_p.ebv, name = "Phenocycler_boxplot", width = 4, height = 4.5)
+    pf_saveplot(ctx, p_sum_box_p.ebv + coord_cartesian(ylim = c(0, 15)), name = "Phenocycler_boxplot.zoom", width = 4, height = 4.5)
 
     invisible(ctx)
 }
@@ -473,4 +516,46 @@ pf_run_sections <- function(ctx, sections) {
     }
 
     invisible(ctx)
+}
+
+plot_viral_gene_ref = function(viral_genes_df, highlight_genes){
+    viral_genes_df = viral_genes_df %>% filter(type == "exon")
+    viral_genes_df = viral_genes_df %>% mutate(gene_label = ifelse(gene %in% highlight_genes, gene, "other"))
+    head(viral_genes_df)
+    viral_genes_df$gene_label %>% table
+    viral_genes_df$gene_label = factor(viral_genes_df$gene_label)
+    ?relevel
+
+    lev_o =c(setdiff(levels(viral_genes_df$gene_label), "other"), "other")
+    lev_o = rev(lev_o)
+    viral_genes_df$gene_label = factor(viral_genes_df$gene_label, levels = lev_o)
+    viral_genes_df$gene_label
+    ggplot(viral_genes_df, aes(x = start, xend = end, y = gene_label, yend = gene_label)) +
+        geom_segment(linewidth = 2)
+
+    ggplot(viral_genes_df, aes(x = start, xend = end, y = gene_label, yend = gene_label)) +
+        geom_point()
+
+    rect_height = .8
+    viral_genes_df = viral_genes_df %>% mutate(ymin = as.numeric(gene_label)-rect_height/2, ymax = as.numeric(gene_label)+rect_height/2)
+
+    gene_names = levels(viral_genes_df$gene_label)
+    gene_names = split(gene_names, sub("-.+", "", gene_names))
+    gene_colors = gene_names
+    gene_colors$EBER = seqsetvis::safeBrew(c(1:5, gene_names$EBER), pal = "Blues")
+    gene_colors$EBNA = seqsetvis::safeBrew(c(1:3, gene_names$EBNA), pal = "Reds")
+    gene_colors$LMP = seqsetvis::safeBrew(c(1:4, gene_names$LMP), pal = "Greens")
+    gene_colors$other = c("other" = "gray")
+    names(gene_colors) = NULL
+    gene_colors = unlist(gene_colors)
+
+    ggplot(viral_genes_df, aes(xmin = start, xmax = end, ymin = ymin, ymax = ymax)) +
+        geom_point(aes(x = start, y = gene_label), alpha = 0) +
+        geom_rect(linewidth = .5, aes(color = gene_label, fill = gene_label), show.legend = FALSE) +
+        scale_color_manual(values = gene_colors) +
+        scale_fill_manual(values = gene_colors) +
+        labs(y = "", x = "") +
+        ggplot2::scale_x_continuous(labels = function(x) x / 1000) +
+        ggplot2::labs(x = "EBV genomic position (kb)")
+
 }

@@ -46,6 +46,7 @@
 #' @export
 load_meta_data <- function() {
   meta_df <- openxlsx::read.xlsx(.get_status_file())
+  meta_df$Notes = NULL
 
   if (ncol(meta_df) < 2) {
     stop("EBER status sheet must have at least two columns.", call. = FALSE)
