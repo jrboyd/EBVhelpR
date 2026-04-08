@@ -8,6 +8,7 @@ if (!requireNamespace("TiffPlotR", quietly = TRUE)) {
 
 # 1) Build a CellQuery object for an assay.
 cq <- CellQuery(assay_type = EBV_ASSAY_TYPES$RNAScope_4plex)
+
 print(cq)
 
 # 2) Select a subset of samples to work on in this dev run.

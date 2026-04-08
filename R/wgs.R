@@ -94,7 +94,7 @@ setup_wgs_files <- function(
   wgs_df <- merge(count_df, bigwig_df, by = "sample_id", all = TRUE)
   wgs_df$sample_id <- .harmonize_bigwig_sample_ids(wgs_df$sample_id, meta_df$sample_id)
 
-  wgs_df <- merge(wgs_df, meta_df[, c("sample_id", "EBER_status")], by = "sample_id", all.x = TRUE)
+  wgs_df <- merge(wgs_df, meta_df, by = "sample_id", all.x = TRUE)
   wgs_df$EBER_status[is.na(wgs_df$EBER_status)] <- "need info"
 
   wgs_df

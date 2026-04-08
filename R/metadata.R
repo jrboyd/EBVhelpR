@@ -51,7 +51,7 @@ load_meta_data <- function() {
     stop("EBER status sheet must have at least two columns.", call. = FALSE)
   }
 
-  colnames(meta_df) <- c("sample_id", "EBER_status", "sample_type")
+  colnames(meta_df)[1:3] <- c("sample_id", "EBER_status", "sample_type")
 
   meta_df$sample_id <- gsub("-", "_", meta_df$sample_id)
   meta_df$sample_id <- gsub("[()]", "", meta_df$sample_id)
