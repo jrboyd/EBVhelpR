@@ -125,41 +125,42 @@ pf_section_wgs_setup <- function(ctx) {
     invisible(ctx)
 }
 
-pf_section_wgs_initial_plots <- function(ctx) {
-    p_enrichment <- plot_wgs_viral_enrichment(ctx$wgs_count_summary) +
+append_viral_reference = function(in_plot,
+                                  ctx,
+                                  rel_heights,
+                                  xrng,
+                                  yrng){
+    plist = seqsetvis:::sync_height(list(
+        in_plot + coord_cartesian(xlim = xrng, ylim = yrng) +
+            ggplot2::scale_x_continuous(labels = function(x) x / 1000) +
+            ggplot2::labs(x = "EBV genomic position (kb)") +
+            labs(x = "") + theme(axis.text.x = element_blank()),
+        ctx$viral_genes_plot + coord_cartesian(xlim = xrng)
+    ), sync_width = TRUE)
+    cowplot::plot_grid(plotlist = plist, ncol = 1, rel_heights = rel_heights)
+
+}
+
+.plot_wgs = function(ctx, wgs_summary, wgs_pileup, prefix){
+    p_enrichment <- plot_wgs_viral_enrichment(wgs_summary) +
         ggplot2::scale_fill_manual(values = ctx$colors_EBER_status) +
         ggplot2::scale_color_manual(values = ctx$colors_EBER_status) +
         ggplot2::theme(axis.text.y = ggplot2::element_text(hjust = 0, size = 8))
 
-    p_lines <- plot_wgs_pileup_lines(ctx$pileup_df, ylim = c(0, 2000))
+    p_lines <- plot_wgs_pileup_lines(wgs_pileup, ylim = c(0, 2000))
 
-    xrng = range(ctx$pileup_df$x)
+    xrng = range(wgs_pileup$x)
 
-    append_viral_reference = function(in_plot,
-                                      ctx,
-                                      rel_heights,
-                                      yrng){
-        plist = seqsetvis:::sync_height(list(
-            in_plot + coord_cartesian(xlim = xrng, ylim = yrng) +
-                ggplot2::scale_x_continuous(labels = function(x) x / 1000) +
-                ggplot2::labs(x = "EBV genomic position (kb)") +
-                labs(x = "") + theme(axis.text.x = element_blank()),
-            ctx$viral_genes_plot + coord_cartesian(xlim = xrng)
-        ), sync_width = TRUE)
-        cowplot::plot_grid(plotlist = plist, ncol = 1, rel_heights = rel_heights)
-
-    }
-
-    pg_lines.2k = append_viral_reference(p_lines, ctx, c(2, 1.5), c(0, 2000))
-    pg_lines.zoom = append_viral_reference(p_lines, ctx, c(2, 1.5), c(0, 20))
+    pg_lines.2k = append_viral_reference(p_lines, ctx, c(2, 1.5), xrng = xrng, yrng = c(0, 2000))
+    pg_lines.zoom = append_viral_reference(p_lines, ctx, c(2, 1.5), xrng = xrng, yrng = c(0, 20))
 
 
 
     pg_lines <- cowplot::plot_grid(pg_lines.2k, pg_lines.zoom, nrow = 1)
 
     p_heat <- plot_wgs_pileup_heatmap(
-        pileup_df = ctx$pileup_df,
-        wgs_count_summary = ctx$wgs_count_summary,
+        pileup_df = wgs_pileup,
+        wgs_count_summary = wgs_summary,
         normalize_by_sample = FALSE,
         status_colors = ctx$colors_EBER_status
     ) +
@@ -167,24 +168,28 @@ pf_section_wgs_initial_plots <- function(ctx) {
         ggplot2::theme(axis.text.y = ggplot2::element_text(hjust = 0, size = 8))
 
     p_heat_norm <- plot_wgs_pileup_heatmap(
-        pileup_df = ctx$pileup_df,
-        wgs_count_summary = ctx$wgs_count_summary,
+        pileup_df = wgs_pileup,
+        wgs_count_summary = wgs_summary,
         normalize_by_sample = TRUE,
         status_colors = ctx$colors_EBER_status
     ) +
         ggplot2::scale_fill_viridis_c() +
         ggplot2::theme(axis.text.y = ggplot2::element_text(hjust = 0, size = 8))
 
-    p_heat = append_viral_reference(p_heat, ctx, rel_heights = c(3, 1), yrng = NULL)
-    p_heat_norm = append_viral_reference(p_heat_norm, ctx, rel_heights = c(3, 1), yrng = NULL)
+    p_heat = append_viral_reference(p_heat, ctx, rel_heights = c(3, 1), xrng = xrng, yrng = NULL)
+    p_heat_norm = append_viral_reference(p_heat_norm, ctx, rel_heights = c(3, 1), xrng = xrng, yrng = NULL)
 
     pf_increase_plot_group(ctx)
-    pf_saveplot(ctx, p_enrichment, "wgs_enrichment_barplot", width = 11, height = 8)
-    pf_saveplot(ctx, pg_lines, "wgs_profiles_lineplot", width = 12.7, height = 6.2)
-    pf_saveplot(ctx, p_heat, "wgs_profiles_heatmap", width = 11, height = 8+3)
-    pf_saveplot(ctx, p_heat_norm, "wgs_profiles_heatmap_normalized", width = 11, height = 8+3)
+    pf_saveplot(ctx, p_enrichment, paste0(prefix, "_wgs_enrichment_barplot"), width = 11, height = 8)
+    pf_saveplot(ctx, pg_lines, paste0(prefix, "_wgs_profiles_lineplot"), width = 12.7, height = 6.2)
+    pf_saveplot(ctx, p_heat, paste0(prefix, "_wgs_profiles_heatmap"), width = 11, height = 8+3)
+    pf_saveplot(ctx, p_heat_norm, paste0(prefix, "_wgs_profiles_heatmap_normalized"), width = 11, height = 8+3)
 
     invisible(ctx)
+}
+
+pf_section_wgs_initial_plots <- function(ctx) {
+    invisible(.plot_wgs(ctx, ctx$wgs_count_summary, ctx$pileup_df, "initial"))
 }
 
 pf_section_overlap_selection <- function(ctx) {
@@ -260,40 +265,7 @@ pf_section_apply_final_ids <- function(ctx) {
 }
 
 pf_section_wgs_replots <- function(ctx) {
-    p_enrichment.re <- plot_wgs_viral_enrichment(ctx$wgs_count_summary.re) +
-        ggplot2::scale_fill_manual(values = ctx$colors_EBER_status) +
-        ggplot2::scale_color_manual(values = ctx$colors_EBER_status) +
-        ggplot2::theme(axis.text.y = ggplot2::element_text(hjust = 0, size = 8))
-
-    p_lines.re <- plot_wgs_pileup_lines(ctx$pileup_df.re, ylim = c(0, 2000))
-    p_lines_zoom.re <- plot_wgs_pileup_lines(ctx$pileup_df.re, ylim = c(0, 20))
-    pg_lines.re <- cowplot::plot_grid(p_lines.re, p_lines_zoom.re, nrow = 1)
-
-    p_heat.re <- plot_wgs_pileup_heatmap(
-        pileup_df = ctx$pileup_df.re,
-        wgs_count_summary = ctx$wgs_count_summary.re,
-        normalize_by_sample = FALSE,
-        status_colors = ctx$colors_EBER_status
-    ) +
-        ggplot2::scale_fill_viridis_c() +
-        ggplot2::theme(axis.text.y = ggplot2::element_text(hjust = 0, size = 8))
-
-    p_heat_norm.re <- plot_wgs_pileup_heatmap(
-        pileup_df = ctx$pileup_df.re,
-        wgs_count_summary = ctx$wgs_count_summary.re,
-        normalize_by_sample = TRUE,
-        status_colors = ctx$colors_EBER_status
-    ) +
-        ggplot2::scale_fill_viridis_c() +
-        ggplot2::theme(axis.text.y = ggplot2::element_text(hjust = 0, size = 8))
-
-    pf_increase_plot_group(ctx)
-    pf_saveplot(ctx, p_enrichment.re, "wgs_restricted_enrichment_barplot", width = 11, height = 8)
-    pf_saveplot(ctx, pg_lines.re, "wgs_restricted_profiles_lineplot", width = 11, height = 8)
-    pf_saveplot(ctx, p_heat.re, "wgs_restricted_profiles_heatmap", width = 11, height = 8)
-    pf_saveplot(ctx, p_heat_norm.re, "wgs_restricted_profiles_heatmap_normalized", width = 11, height = 8)
-
-    invisible(ctx)
+    invisible(.plot_wgs(ctx, ctx$wgs_count_summary.re, ctx$pileup_df.re, "restricted"))
 }
 
 pf_plot_scope_summary_bars <- function(cq, id_lev, status_colors) {
@@ -369,7 +341,7 @@ pf_section_scope_summary_plots <- function(ctx) {
     pf_saveplot(ctx, p_sum_bars_r4, name = "RNAScope_4plex_barplot", width = 11, height = 7.2)
     pf_saveplot(ctx, p_sum_bars_r3i, name = "RNAScope_3plexIF_barplot", width = 11, height = 7.2)
     pf_saveplot(ctx, p_sum_bars_p, name = "Phenocycler_barplot.all_probes", width = 11, height = 8.3)
-    pf_saveplot(ctx, p_sum_bars_p.ebv, name = "Phenocycler_barplot", width = 5.4, height = 4.5)
+    pf_saveplot(ctx, p_sum_bars_p.ebv, name = "Phenocycler_barplot", width = 5.4, height = 8.3)
 
     pf_saveplot(ctx, p_sum_box_r4, name = "RNAScope_4plex_boxplot", width = 8.4, height = 5)
     pf_saveplot(ctx, p_sum_box_r3i, name = "RNAScope_3plexIF_boxplot", width = 8.4, height = 5)
