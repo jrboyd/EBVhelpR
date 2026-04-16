@@ -237,6 +237,7 @@ get_tiff_file_path_df = function(){
 
     tiff_df$sample_id <- sub("_?NegCTL", "", tiff_df$sample_id)
     tiff_df$sample_id <- sub("_?PosCTL", "", tiff_df$sample_id)
+    tiff_df$sample_id = sub("^JRB_", "", tiff_df$sample_id)
 
     tiff_df
 }

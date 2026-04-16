@@ -3,9 +3,9 @@ library(EBVhelpR)
 library(tidyverse)
 
 #### setup ####
-res_dir = "output_cell_views_04092026_v1"
+res_dir = "output_cell_views_04092026_v2"
 res_file = function(f){
-    f = file.path(dirname(f), paste0(plot_group, "_", f))
+    f = file.path(dirname(f), paste0(plot_group, "_", basename(f)))
     out_f = file.path(res_dir, f)
     dir.create(dirname(out_f), recursive = TRUE, showWarnings = FALSE)
     out_f
@@ -29,15 +29,15 @@ my_saveplot = function(plot, name, width, height){
 
 #### load ####
 cq_r4 = readRDS("output_presentation_04092026_v2/05_cq_r4.Rds")
+tiff_df_r4 = get_query_tiff_paths_df(cq_r4)
+tiff_meta_r4 = lapply(tiff_df_r4$tiff_file, TiffPlotR::read_tiff_meta_data)
+tiff_meta_r4[[1]]
+
 cq_r3i = readRDS("output_presentation_04092026_v2/05_cq_r3i.Rds")
 cq_r3i@summary_df %>% head
 cq_r3i@all_cell_files_df$file
 
 cq_p = readRDS("output_presentation_04092026_v2/05_cq_p.Rds")
-get_tiff_file_path_df(cq_p)
-tmp = get_query_tiff_paths_df(cq_p)
-TiffPlotR::read_tiff_meta_data(tmp$tiff_file[1])
-get_tiff_file_path_df(tmp$tiff_file[1])
 
 cq = cq_r4
 #update tiff paths to locally available
@@ -52,67 +52,127 @@ cq@all_cell_files_df = cq@all_cell_files_df[!duplicated(cq@all_cell_files_df$uni
 
 assay_name = cq@assay_type
 
+# jrb_tiffs = dir("Z:/FUSION DATA/AshleyVolaric/Phenocycler", pattern = "JRB", full.names = TRUE)
+#
+# tiff_meta = lapply(c(jrb_tiffs, tiff_df$tiff_file), TiffPlotR::read_tiff_meta_data)
+# sapply(tiff_meta, function(x){max(x$sizeC)})
 
 
-cq = filter_query_to_tiff_path_samples(cq)
+cq_p.jrb = cq_p
+jrb_tiff_df = EBVhelpR::get_tiff_file_path_df() %>% filter(grepl("JRB", tiff_file))
+jrb_tiff_df = jrb_tiff_df %>% mutate(sample_id = sub("JRB_", "", sample_id))
+jrb_tiff_df = EBVhelpR:::.df_prep(jrb_tiff_df)
+cq_p.jrb@tiff_paths_df = EBVhelpR:::.df_prep(jrb_tiff_df)
+cq_p.jrb
+cq_p.jrb = filter_query_to_tiff_path_samples(cq_p.jrb)
+cq_p.jrb@assay_type = "Phenocycler_JRB"
+cq_p.jrb@selected_unique_ids = cq_p.jrb@selected_sample_ids
+cq = cq_p.jrb
 
-qsum = get_query_summary_df(cq)
-qcell_files = get_query_cell_files_df(cq)
+all_cq = list(cq_r3i, cq_r4, cq_p, cq_p.jrb)
+names(all_cq) = sapply(all_cq, function(x)x@assay_type)
+all_tiff_path_df = lapply(all_cq, function(x){
+    x = filter_query_to_tiff_path_samples(x)
+    get_query_tiff_paths_df(x)
+})
+x = all_tiff_path_df$`RNAScope_3plex+IF`
+all_tiff_meta_df.l = lapply(all_tiff_path_df, function(x){
+    todo = x$tiff_file
+    names(todo) = x$unique_id
+    meta_x = pbapply::pblapply(todo, TiffPlotR::read_tiff_meta_data)
+    bind_rows(meta_x, .id = "unique_id")
 
-todo = qcell_files$unique_id %>% unique
+})
 
-sel_id = todo[1]
+tiff_meta_df = bind_rows(all_tiff_meta_df.l, .id = "assay")
+sum_df = tiff_meta_df %>% group_by(assay, unique_id) %>%
+    summarise(sizeC_max = max(sizeC), sizeC_min = min(sizeC), resolutionLevel_max = max(resolutionLevel))
+sum_df %>% group_by(assay) %>%
+    summarise(sizeC_max = min(sizeC_max), sizeC_min = max(sizeC_min), resolutionLevel_min = min(resolutionLevel_max))
 
 
-for(sel_id in todo){
-    message(sel_id)
-    if(check_saveplot(paste0("validate_", sel_id))){
-        message("skipping")
-        next
+tiff_df = bind_rows(all_tiff_path_df, .id = "assay") %>% select(assay, tiff_file, unique_id)
+sum_df = merge(sum_df,
+      tiff_df, all.x = TRUE)
+
+write.csv(sum_df, res_file("tiff_info.csv"))
+
+bad_tiffs = subset(sum_df, sizeC_max == 1)
+
+tmp = subset(sum_df, assay == "RNAScope_4plex")
+subset(tmp, !unique_id %in% bad_tiffs$unique_id)
+
+
+all_cq = list(cq_r3i, cq_r4, cq_p, cq_p.jrb)
+#remove bad tiffs
+all_cq = lapply(all_cq, function(cq){
+    cq@tiff_paths_df = cq@tiff_paths_df %>% subset(!grepl("2468_D-EB-3", tiff_file))
+    cq
+})
+
+#### verify cell alignment ####
+for(cq in all_cq){
+    cq = filter_query_to_tiff_path_samples(cq)
+    qsum = get_query_summary_df(cq)
+    qcell_files = get_query_cell_files_df(cq)
+    todo = qcell_files$unique_id %>% unique
+
+    for(sel_id in todo){
+        message(sel_id)
+        out_file = paste0(cq@assay_type, "/validate_", sel_id)
+        if(check_saveplot(out_file)){
+            message("skipping")
+            next
+        }
+
+        cq.i = set_selected_unique_ids(cq, sel_id)
+        cell_df = load_query_cell_data(cq.i)
+        # qcell_files = get_query_cell_files_df(cq.i)
+        tiff_df = get_query_tiff_paths_df(cq.i)
+        if(nrow(tiff_df) > 1){
+            warning("multiple tiffs for sel_id: ", sel_id)
+        }
+        tiff_f = tiff_df$tiff_file[1]
+        stopifnot(length(tiff_f) == 1)
+
+        cell_df = cell_df %>% mutate(x = (XMin + XMax)/2, y = (YMin + YMax)/2)
+
+
+        img_info = read_tiff_meta_data(tiff_f)
+        max_x = max(img_info$sizeX)
+        max_y = max(img_info$sizeY)
+        min_dim = min(max_x, max_y)
+
+        # debug(fetchTiffData.rgb)
+        img_res = tryCatch({
+            fetchTiffData.rgb(tiff_path = tiff_f, channel_names = EBV_CHANNELS[[assay_name]],
+                              blue_channel = 1, red_channel = 6, green_channel = 2)
+
+        }, error = function(e){
+            NULL
+        })
+        if(is.null(img_res)){
+            message("error during loading. tiff_f")
+            p_bad = ggplot() + labs(title = "bad image")
+            my_saveplot(p_bad, out_file, width = 9.8, 5.2)
+            next
+        }
+
+        tp = sample(nrow(cell_df), min(1e3, nrow(cell_df)))
+        p1 = img_res@plots$rgb
+        p2 = img_res@plots$rgb +
+            annotate("point", x= cell_df$x[tp], y = cell_df$y[tp], color = "magenta") +
+            coord_fixed()
+        pg_validate = cowplot::plot_grid(p1, p2)
+
+        eber_status = get_query_summary_df(cq.i)$EBER_status[1]
+        p_title = ggplot() + labs(title = paste(sel_id, ":", eber_status), subtitle = tiff_f) +
+            theme_void()
+        pg_final = cowplot::plot_grid(p_title, pg_validate, ncol = 1, rel_heights = c(1, 12))
+        my_saveplot(pg_final, out_file, width = 9.8, 5.2)
+        message("saved plot ", out_file)
+        # plot(pg_final)
     }
-
-    cq.i = set_selected_unique_ids(cq, sel_id)
-    cell_df = load_query_cell_data(cq.i)
-    # qcell_files = get_query_cell_files_df(cq.i)
-    tiff_df = get_query_tiff_paths_df(cq.i)
-    tiff_f = tiff_df$tiff_file[1]
-    stopifnot(length(tiff_f) == 1)
-
-    cell_df = cell_df %>% mutate(x = (XMin + XMax)/2, y = (YMin + YMax)/2)
-
-
-    img_info = read_tiff_meta_data(tiff_f)
-    max_x = max(img_info$sizeX)
-    max_y = max(img_info$sizeY)
-    min_dim = min(max_x, max_y)
-
-    # debug(fetchTiffData.rgb)
-    img_res = tryCatch({
-        fetchTiffData.rgb(tiff_path = tiff_f, channel_names = EBV_CHANNELS[[assay_name]],
-                                    blue_channel = 1, red_channel = 6, green_channel = 2)
-
-    }, error = function(e){
-        NULL
-    })
-    if(is.null(img_res)){
-        message("error during loading.")
-        next
-    }
-
-    tp = sample(nrow(cell_df), 1e3)
-    p1 = img_res@plots$rgb
-    p2 = img_res@plots$rgb +
-        annotate("point", x= cell_df$x[tp], y = cell_df$y[tp], color = "magenta") +
-        coord_fixed()
-    pg_validate = cowplot::plot_grid(p1, p2)
-
-    eber_status = get_query_summary_df(cq.i)$EBER_status[1]
-    p_title = ggplot() + labs(title = paste(sel_id, ":", eber_status)) +
-        theme_void()
-    pg_final = cowplot::plot_grid(p_title, pg_validate, ncol = 1, rel_heights = c(1, 12))
-    my_saveplot(pg_final, paste0("validate_", sel_id), width = 9.8, 5.2)
-    message("saved plot")
-    # plot(pg_final)
 }
 
 #### look at high density area ####

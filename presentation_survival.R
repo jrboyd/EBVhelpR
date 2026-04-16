@@ -1,23 +1,8 @@
 library(EBVhelpR)
 library(ggplot2)
 library(tidyverse)
-# Example WGS workflow using EBVhelpR helper functions.
-# Update `wgs_root_dir` to your local WGS analysis directory if needed.
-# Set to NULL to use package defaults.
 
-# 01 WGS viral enrichment and for all samples. 1 sample with no EBER status omitted, "not performed". Includes profiles along viral genome.
-# 02 overlap of samples completed for WGS, RNAscope1+2 and Phenocycler. Final selection of 30 patients with complete set of data.
-# 03 replot of WGS for selected final patient set
-# 04 summaries for RNAscope1+2 and Phenocycler. This is the same percent positive data Kyra generated.
-# 05 final select of scope data for cell viewing
-# 06 correlation of scope data with WGS
-
-#version 3 changes
-#no combo plots
-#phenocycler : just ebna/lmp variants
-# viral genome position with highlights for EBER, LMP1, EBNA2, EBNA3
-
-res_dir = "output_survival_v1"
+res_dir = "output_survival_v2"
 res_file = function(f){
     f = file.path(dirname(f), paste0(plot_group, "_", f))
     out_f = file.path(res_dir, f)
@@ -32,7 +17,7 @@ increase_plot_group = function(){
     plot_group <<- str
 }
 my_saveplot = function(plot, name, width, height){
-    ggsave(res_file(paste0(name, ".png")), plot, width = width, height = height)
+    ggsave(res_file(paste0(name, ".png")), plot, width = width, height = height, bg = "white")
     ggsave(res_file(paste0(name, ".pdf")), plot, width = width, height = height)
 }
 
@@ -46,6 +31,7 @@ theme_set(ggpubr::theme_pubr())
 library(survminer)
 library(survival)
 surv_df = openxlsx::read.xlsx("inst/extdata/survival_040626.xlsx")
+dim(surv_df)
 
 meta_df %>% head
 surv_df %>% head
@@ -131,5 +117,96 @@ my_saveplot(pg, "survival", width = 9.5, height = 5)
 
 mine_df %>% filter(sample_id %in% false_neg_ids)
 
-mine_df$sample_id = factor()
 mine_df %>% filter(sample_id %in% false_neg_ids) %>% arrange(sample_id)
+
+days_to_test = c(500, 1000, 2000)
+alive_at_days = 500
+
+eber_to_test = c("EBER_status", "EBER_sensitive")
+eber_var = "EBER_status"
+eber_var = "EBER_sensitive"
+
+
+tables_list = list()
+pvalues_list = list()
+
+for(alive_at_days in days_to_test){
+    for(eber_var in eber_to_test){
+        #remove unknown status samples
+        fish_df = mine_df %>% filter(!is.na(time))
+        fish_df = fish_df %>% mutate(incomplete = (time < alive_at_days & status == 0))
+        fish_df = fish_df %>% mutate(still_alive = time > alive_at_days)
+        cont_df = fish_df %>% group_by(!!sym(eber_var), still_alive) %>% summarise(N = length(sample_id))
+        cont_df = cont_df %>% pivot_wider(id_cols = !!sym(eber_var), names_from = still_alive, values_from = N, values_fill = 0)
+        cont_mat = as.matrix(cont_df[,-1])
+        rownames(cont_mat) = cont_df[[eber_var]]
+
+        table_df = reshape2::melt(cont_mat)
+        colnames(table_df) = c("EBER", "alive", "count")
+
+        name = paste(eber_var, alive_at_days)
+        tables_list[[name]] = table_df
+
+
+        test_res = fisher.test(cont_mat, alternative = "two.sided")
+        test_res$p.value
+        pvalues_list[[name]] = test_res$p.value
+
+    }
+}
+
+tables_list
+pvalues_list
+mat_df = data.frame(res_names = names(tables_list)) %>%
+    separate(col = res_names,
+             into = c("EBER_type", "days"),
+             sep =  " ", remove = FALSE)
+
+table_df = tables_list[[1]]
+tab_plots = lapply(names(tables_list), function(name){
+    table_df = tables_list[[name]]
+    pval = pvalues_list[[name]]
+    table_df$EBER = factor(table_df$EBER, levels = rev(levels(table_df$EBER)))
+
+    table_df$alive_label = ifelse(table_df$alive, "Alive", "Deceased")
+    table_df$alive_label = factor(table_df$alive_label, levels = c("Deceased", "Alive"))
+
+    ggplot(table_df) +
+        geom_text(aes(x = EBER, y = alive_label, label = count)) +
+        scale_x_discrete(position = "top") +
+        theme(axis.line = element_blank(), axis.ticks = element_blank()) +
+        theme(axis.text = element_text(size = 8)) +
+        labs(x = "", y = "", caption = paste("p-value", format(pval, digits = 5)))
+})
+
+pg_main = cowplot::plot_grid(plotlist = tab_plots, byrow = TRUE, ncol = 2)
+
+row_labels = lapply(days_to_test, function(x){
+    ggplot() + annotate("text", x= .7, y = .5, label = x) + theme_void() +
+        coord_cartesian(xlim = c(0, 1), ylim = c(0, 1))
+})
+
+status_rename = c(
+    "EBER_status" = "Standard",
+    "EBER_sensitive" = "Sensitive"
+)
+col_labels = lapply(c("", status_rename[eber_to_test]), function(x){
+    ggplot() + annotate("text", x= .5, y = .25, label = x) + theme_void() +
+        coord_cartesian(xlim = c(0, 1), ylim = c(0, 1))
+})
+
+pg_row_labels = cowplot::plot_grid(plotlist = row_labels, ncol = 1)
+pg_main_row  = cowplot::plot_grid(pg_row_labels, pg_main, nrow = 1, rel_widths = c(1, 5))
+pg_col_labels = cowplot::plot_grid(plotlist = col_labels, nrow = 1, rel_widths = c(1, 5))
+
+pg_assembly = cowplot::plot_grid(
+    pg_col_labels,
+    pg_main_row,
+    ncol = 1, rel_heights = c(1, 6)
+)
+
+pg_assembly.final = pg_assembly +
+    cowplot::draw_text(text = "Days Since Diagnosis/Biopsy", x = .05, y = .42, angle = 90, vjust = 0) +
+    cowplot::draw_text(text = "EBER Status Type", x = .6, y = .98, angle = 0, vjust = 1)
+
+my_saveplot(cowplot::as_grob(pg_assembly.final), "fisher_test", width = 5, height = 6.4)

@@ -152,8 +152,8 @@ load_cell_source_files <- function() {
             name = sub("_Control_", "_NegCTL_", .data$name)
         ) |>
         dplyr::mutate(
-            sample_type = "cohort",
-            sample_type = ifelse(grepl("(CTL)|(EBER)|(Test)", .data$name), "control", .data$sample_type)
+            code_type = "cohort",
+            code_type = ifelse(grepl("(CTL)|(EBER)|(Test)", .data$name), "control", .data$code_type)
         ) |>
         dplyr::mutate(
             name = gsub("-", "_", .data$name),
@@ -164,16 +164,17 @@ load_cell_source_files <- function() {
 
     cell_df$sample_id <- cell_df$name
 
-    cell_df.by_type <- split(cell_df, cell_df$sample_type)
+    cell_df.by_type <- split(cell_df, cell_df$code_type)
     meta_df <- load_meta_data()
 
     cell_df.by_type$cohort <- merge(cell_df.by_type$cohort, meta_df, all.x = TRUE)
+
 
     warning("removing D_EB_12_D_EB_33_Scan5, multiple samples in same image")
     cell_df.by_type$cohort = cell_df.by_type$cohort %>% dplyr::filter(!grepl("D_EB_12_D_EB_33", name))
 
     valid = cell_df.by_type$cohort$sample_id %in% meta_df$sample_id
-    cell_df.by_type$cohort[!valid,]
+    # cell_df.by_type$cohort[!valid,]
 
     stopifnot(all(cell_df.by_type$cohort$sample_id %in% meta_df$sample_id))
 
@@ -185,7 +186,23 @@ load_cell_source_files <- function() {
         dplyr::mutate(sample_id = sub("CellPelletSlide_", "", .data$sample_id))|>
         dplyr::mutate(sample_id = sub("_Phenocycler", "", .data$sample_id)) %>%
         dplyr::mutate(sample_id = sub("_EBER_LMP1_EBNA1", "", .data$sample_id)) %>%
+        dplyr::mutate(sample_id = sub("EBER_LMP1_EBNA1_", "", .data$sample_id)) %>%
+
         dplyr::mutate(sample_id = sub("Test_", "", .data$sample_id))
+
+    cell_df.by_type$control = cell_df.by_type$control %>%
+        mutate(probe_control = "") %>%
+        mutate(probe_control = ifelse(grepl("PosCTL", sample_id), "positive_probe", probe_control)) %>%
+        mutate(probe_control = ifelse(grepl("NegCTL", sample_id), "negative_probe", probe_control))
+
+    #split(cell_df.by_type$control, cell_df.by_type$control$probe_control)
+
+    cell_df.by_type$control = cell_df.by_type$control %>%
+        mutate(sample_id = sub("_?((Neg)|(Pos))CTL_?", "", sample_id))
+
+    setdiff(cell_df.by_type$control$sample_id, meta_df$sample_id)
+
+    cell_df.by_type$control = merge(cell_df.by_type$control, meta_df, all.x = TRUE)
     # cell_df.by_type$control = cell_df.by_type$control |>
     # dplyr::group_by(.data$file) |>
     # dplyr::mutate(
@@ -198,9 +215,7 @@ load_cell_source_files <- function() {
 
     final_df = dplyr::bind_rows(cell_df.by_type$cohort, cell_df.by_type$control)
 
-    final_df$probe_control = ""
-    final_df = final_df %>% dplyr::mutate(probe_control = ifelse(grepl("[Nn]eg", sample_id), "negative_probe", probe_control))
-    final_df = final_df %>% dplyr::mutate(probe_control = ifelse(grepl("[Pp]os", sample_id), "positive_probe", probe_control))
+    final_df = final_df %>% dplyr::mutate(probe_control = ifelse(is.na(probe_control), "", probe_control))
 
     final_df$sample_id <- sub("_?NegCTL", "", final_df$sample_id)
     final_df$sample_id <- sub("_?PosCTL", "", final_df$sample_id)
@@ -208,5 +223,16 @@ load_cell_source_files <- function() {
     final_df$name = NULL
     final_df$project_name <- assay_to_project_name[final_df$assay]
     final_df = .df_prep(final_df)
+
+    #add cell counts
+    count_file = dir(get_wrangled_cell_data_dir(), pattern = "cell_counts.txt", full.names = TRUE)
+    tmp = read.table(count_file, sep = "\n")
+    tmp$V1 = sub(" +", "", tmp$V1)
+    tmp$V1 = sub(" ", "\t", tmp$V1)
+    cell_counts = tmp %>% separate(V1, c("cell_count", "file"), sep = "\t")
+    cell_counts$cell_count = as.numeric(cell_counts$cell_count)
+    #
+    final_df = merge(final_df, cell_counts, all.x = TRUE)
+
     final_df
 }

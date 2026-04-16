@@ -107,8 +107,10 @@ load_query_cell_data <- function(object, sample_col = "unique_id") {
     names(to_load) <- cell_info_df[[sample_col]]
     # cell_info_df %>% dplyr::select(file, sample_id, probe_control)
 
-    to_verify = cq@tiff_paths_df$tiff_file
-    names(to_verify) = to_load[cq@tiff_paths_df[[sample_col]]]
+    get_query_tiff_paths_df(object)
+    tiff_df = cq@tiff_paths_df %>% dplyr::filter(!!sym(sample_col) %in% names(to_load))
+    to_verify = tiff_df$tiff_file
+    names(to_verify) = to_load[tiff_df[[sample_col]]]
 
     cell_df_l <- lapply(to_load, function(f) {
         full_path <- file.path(get_wrangled_cell_data_dir(), f)
@@ -122,9 +124,23 @@ load_query_cell_data <- function(object, sample_col = "unique_id") {
         }
 
         img = to_verify[f]
-        img_meta = TiffPlotR::read_tiff_meta_data(img)
-        df = subset(df, YMax < max(img_meta$sizeY))
-        df = subset(df, XMax < max(img_meta$sizeX))
+
+
+
+        if(!is.na(img)){
+            df = tryCatch({
+                img_meta = TiffPlotR::read_tiff_meta_data(img)
+                df = subset(df, YMax < max(img_meta$sizeY))
+                df = subset(df, XMax < max(img_meta$sizeX))
+                df
+            }, error = function(e){
+                warning("Could not use image to verify cell coordinate range: TiffPlotR::read_tiff_meta_data('", img, "')")
+                df
+            })
+        }else{
+            warning("Could no find image for ", f)
+        }
+
         df
     })
 
