@@ -239,5 +239,13 @@ get_tiff_file_path_df = function(){
     tiff_df$sample_id <- sub("_?PosCTL", "", tiff_df$sample_id)
     tiff_df$sample_id = sub("^JRB_", "", tiff_df$sample_id)
 
+    #remove problematic image
+    if(any(grepl("2468_D-EB-3", tiff_df$tiff_file))){
+        bad_df = tiff_df %>% subset(grepl("2468_D-EB-3", tiff_file))
+        warning("removing known problematic tiff : ", paste(bad_df$tiff_file, collapse = ", "))
+        tiff_df = tiff_df %>% subset(!grepl("2468_D-EB-3", tiff_file))
+    }
+
+
     tiff_df
 }
