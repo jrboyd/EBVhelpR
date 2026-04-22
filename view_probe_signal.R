@@ -318,6 +318,7 @@ master_plot_density = function(cq, target_density, n_views){
     })
     all_probe_plots$D_EB_18
     all_probe_plots$D_EB_20
+    all_probe_plots$D_EB_8
 }
 
 # i = 2
