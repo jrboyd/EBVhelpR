@@ -181,6 +181,10 @@ append_viral_reference = function(in_plot,
 
     pf_increase_plot_group(ctx)
     pf_saveplot(ctx, p_enrichment, paste0(prefix, "_wgs_enrichment_barplot"), width = 11, height = 8)
+
+    p_enrichment.zoom = p_enrichment + coord_flip(ylim = c(0, 125))
+    pf_saveplot(ctx, p_enrichment.zoom, paste0(prefix, "_wgs_enrichment_barplot.zoom"), width = 11, height = 8)
+
     pf_saveplot(ctx, pg_lines, paste0(prefix, "_wgs_profiles_lineplot"), width = 12.7, height = 6.2)
     pf_saveplot(ctx, p_heat, paste0(prefix, "_wgs_profiles_heatmap"), width = 11, height = 8+3)
     pf_saveplot(ctx, p_heat_norm, paste0(prefix, "_wgs_profiles_heatmap_normalized"), width = 11, height = 8+3)
@@ -280,6 +284,26 @@ pf_plot_scope_summary_bars <- function(cq, id_lev, status_colors) {
         ggplot2::labs(x = "Percent Positive", y = "", fill = "EBER status")
 }
 
+pf_plot_scope_summary_bars.with_controls <- function(cq, id_lev, status_colors) {
+    qsum <- get_query_summary_df(cq)
+    id_lev = intersect(id_lev, qsum$sample_id)
+    qsum.c = cq@summary_df %>% filter(sample_type == "control")
+    qsum.c = qsum.c %>% arrange(EBER_status)
+    qsum = rbind(qsum, qsum.c)
+    id_lev = c(id_lev, unique(qsum.c$sample_id))
+    id_lev = unique(id_lev)
+    qsum$sample_id <- factor(qsum$sample_id, levels = id_lev)
+    qsum <- qsum %>% subset(!grepl("_", combo))
+    qsum$sample_type = factor(qsum$sample_type)
+    qsum$sample_type = factor(qsum$sample_type, levels = c("control", setdiff(levels(qsum$sample_type), "control")))
+
+    ggplot2::ggplot(qsum, ggplot2::aes(x = Positive_Percent, y = sample_id, fill = EBER_status)) +
+        ggplot2::geom_col() +
+        ggplot2::facet_grid(sample_type~combo, scales = "free", space = "free_y") +
+        ggplot2::scale_fill_manual(values = status_colors) +
+        ggplot2::labs(x = "Percent Positive", y = "", fill = "EBER status")
+}
+
 pf_plot_scope_summary_boxplot <- function(cq, status_colors) {
     qsum <- get_query_summary_df(cq)
     qsum <- qsum %>% subset(!grepl("_", combo))
@@ -290,12 +314,37 @@ pf_plot_scope_summary_boxplot <- function(cq, status_colors) {
         ggplot2::labs(x = "Probe", y = "Percent Positive", fill = "EBER status")
 }
 
+pf_plot_scope_summary_boxplot.with_controls <- function(cq, status_colors) {
+    qsum <- get_query_summary_df(cq)
+    qsum.c = cq@summary_df %>% filter(sample_type == "control")
+    qsum.c = qsum.c %>% arrange(EBER_status)
+    qsum = rbind(qsum, qsum.c)
+    qsum <- qsum %>% subset(!grepl("_", combo))
+    qsum$sample_type = factor(qsum$sample_type)
+    qsum$sample_type = factor(qsum$sample_type, levels = c("control", setdiff(levels(qsum$sample_type), "control")))
+
+    ggplot2::ggplot(qsum, ggplot2::aes(x = combo, y = Positive_Percent, fill = EBER_status)) +
+        ggplot2::geom_boxplot() +
+        # ggbeeswarm::geom_beeswarm() +
+        ggplot2::scale_fill_manual(values = status_colors) +
+        ggplot2::labs(x = "Probe", y = "Percent Positive", fill = "EBER status") +
+        ggplot2::facet_grid(sample_type~combo, scales = "free", space = "fixed")
+
+}
+
 pf_section_scope_summary_plots <- function(ctx) {
+
     p_sum_bars_r4 <- pf_plot_scope_summary_bars(ctx$cq_r4, ctx$id_levels, ctx$colors_EBER_status)
     p_sum_bars_r3i <- pf_plot_scope_summary_bars(ctx$cq_r3i, ctx$id_levels, ctx$colors_EBER_status)
 
+    p_sum_bars_r4.with_controls <- pf_plot_scope_summary_bars.with_controls(ctx$cq_r4, ctx$id_levels, ctx$colors_EBER_status)
+    p_sum_bars_r3i.with_controls <- pf_plot_scope_summary_bars.with_controls(ctx$cq_r3i, ctx$id_levels, ctx$colors_EBER_status)
+
     p_sum_box_r4 <- pf_plot_scope_summary_boxplot(ctx$cq_r4, ctx$colors_EBER_status)
     p_sum_box_r3i <- pf_plot_scope_summary_boxplot(ctx$cq_r3i, ctx$colors_EBER_status)
+
+    p_sum_box_r4.with_controls <- pf_plot_scope_summary_boxplot.with_controls(ctx$cq_r4, ctx$colors_EBER_status)
+    p_sum_box_r3i.with_controls <- pf_plot_scope_summary_boxplot.with_controls(ctx$cq_r3i, ctx$colors_EBER_status)
 
     qsum_p <- get_query_summary_df(ctx$cq_p)
     pos_p <- qsum_p %>%
@@ -303,6 +352,7 @@ pf_section_scope_summary_plots <- function(ctx) {
         tidyr::pivot_longer(cols = !sample_id) %>%
         dplyr::mutate(name = sub("% ", "", name)) %>%
         dplyr::mutate(name = sub(" Positive Cells", "", name))
+
 
     pos_p <- merge(ctx$meta_df, pos_p)
     pos_p$sample_id <- factor(pos_p$sample_id, levels = ctx$id_levels)
@@ -337,6 +387,63 @@ pf_section_scope_summary_plots <- function(ctx) {
         ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 45, hjust = 1, vjust = 1)) +
         ggplot2::labs(y = "Percent Positive", x = "Probe", fill = "EBER status")
 
+    # with controls
+    qsum = qsum_p
+    qsum.c = ctx$cq_p@summary_df %>% filter(sample_type == "control")
+    qsum.c = qsum.c %>% arrange(EBER_status)
+    qsum = rbind(qsum, qsum.c)
+    qsum$sample_type = factor(qsum$sample_type)
+    qsum$sample_type = factor(qsum$sample_type, levels = c("control", setdiff(levels(qsum$sample_type), "control")))
+
+    pos_p <- qsum %>%
+        dplyr::select(sample_id, dplyr::contains("Cells") & dplyr::contains("%")) %>%
+        tidyr::pivot_longer(cols = !sample_id) %>%
+        dplyr::mutate(name = sub("% ", "", name)) %>%
+        dplyr::mutate(name = sub(" Positive Cells", "", name))
+
+
+
+    pos_p <- merge(ctx$cq_p@meta_data_df, pos_p)
+    id_lev = unique(c(qsum.c$sample_id, ctx$id_levels))
+
+    pos_p$sample_id <- factor(pos_p$sample_id, levels = id_lev)
+    pos_p$sample_type = factor(pos_p$sample_type)
+    pos_p$sample_type = factor(pos_p$sample_type, levels = c("control", setdiff(levels(pos_p$sample_type), "control")))
+
+    pos_p.ebv = subset(pos_p %>% filter(grepl("(LMP)|(EBN)", name)))
+
+
+    p_sum_bars_p.with_controls <- ggplot2::ggplot(pos_p, ggplot2::aes(x = value, y = sample_id, fill = EBER_status)) +
+        ggplot2::geom_col() +
+        ggplot2::facet_wrap(~name, scales = "free_x", nrow = 2) +
+        ggplot2::scale_fill_manual(values = ctx$colors_EBER_status) +
+        ggplot2::scale_x_continuous(breaks = scales::pretty_breaks(2)) +
+        ggplot2::labs(x = "Percent Positive", y = "", fill = "EBER status") +
+        ggplot2::theme(axis.text.y = ggplot2::element_text(size = 8), axis.text.x = ggplot2::element_text(size = 8))
+
+    p_sum_bars_p.ebv.with_controls = ggplot2::ggplot(pos_p.ebv, ggplot2::aes(x = value, y = sample_id, fill = EBER_status)) +
+        ggplot2::geom_col() +
+        ggplot2::facet_wrap(~name, scales = "free_x", nrow = 2) +
+        ggplot2::scale_fill_manual(values = ctx$colors_EBER_status) +
+        ggplot2::scale_x_continuous(breaks = scales::pretty_breaks(2)) +
+        ggplot2::labs(x = "Percent Positive", y = "", fill = "EBER status") +
+        ggplot2::theme(axis.text.y = ggplot2::element_text(size = 8), axis.text.x = ggplot2::element_text(size = 8))
+
+    p_sum_box_p.with_controls <- ggplot2::ggplot(pos_p, ggplot2::aes(x = name, y = value, fill = EBER_status)) +
+        ggplot2::geom_boxplot() +
+        ggplot2::scale_fill_manual(values = ctx$colors_EBER_status) +
+        ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 45, hjust = 1, vjust = 1)) +
+        ggplot2::labs(y = "Percent Positive", x = "Probe", fill = "EBER status") +
+        facet_grid(sample_type~.)
+
+    p_sum_box_p.ebv.with_controls = ggplot2::ggplot(pos_p.ebv, ggplot2::aes(x = name, y = value, fill = EBER_status)) +
+        ggplot2::geom_boxplot() +
+        ggplot2::scale_fill_manual(values = ctx$colors_EBER_status) +
+        ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 45, hjust = 1, vjust = 1)) +
+        ggplot2::labs(y = "Percent Positive", x = "Probe", fill = "EBER status") +
+        facet_grid(sample_type~.)
+
+
     pf_increase_plot_group(ctx)
     pf_saveplot(ctx, p_sum_bars_r4, name = "RNAScope_4plex_barplot", width = 11, height = 7.2)
     pf_saveplot(ctx, p_sum_bars_r3i, name = "RNAScope_3plexIF_barplot", width = 11, height = 7.2)
@@ -348,6 +455,18 @@ pf_section_scope_summary_plots <- function(ctx) {
     pf_saveplot(ctx, p_sum_box_p, name = "Phenocycler_boxplot.all_probes", width = 7.5, height = 6.4)
     pf_saveplot(ctx, p_sum_box_p.ebv, name = "Phenocycler_boxplot", width = 4, height = 4.5)
     pf_saveplot(ctx, p_sum_box_p.ebv + coord_cartesian(ylim = c(0, 15)), name = "Phenocycler_boxplot.zoom", width = 4, height = 4.5)
+
+    pf_increase_plot_group(ctx)
+    pf_saveplot(ctx, p_sum_bars_r4.with_controls, name = "RNAScope_4plex_barplot.with_controls", width = 11, height = 7.2)
+    pf_saveplot(ctx, p_sum_bars_r3i.with_controls, name = "RNAScope_3plexIF_barplot.with_controls", width = 11, height = 7.2)
+    pf_saveplot(ctx, p_sum_bars_p.with_controls, name = "Phenocycler_barplot.all_probes.with_controls", width = 11, height = 8.3)
+    pf_saveplot(ctx, p_sum_bars_p.ebv.with_controls, name = "Phenocycler_barplot.with_controls", width = 5.4, height = 8.3)
+
+    pf_saveplot(ctx, p_sum_box_r4.with_controls, name = "RNAScope_4plex_boxplot.with_controls", width = 8.4, height = 5)
+    pf_saveplot(ctx, p_sum_box_r3i.with_controls, name = "RNAScope_3plexIF_boxplot.with_controls", width = 8.4, height = 5)
+    pf_saveplot(ctx, p_sum_box_p.with_controls, name = "Phenocycler_boxplot.all_probes.with_controls", width = 7.5, height = 6.4)
+    pf_saveplot(ctx, p_sum_box_p.ebv.with_controls, name = "Phenocycler_boxplot.with_controls", width = 4, height = 4.5)
+    pf_saveplot(ctx, p_sum_box_p.ebv.with_controls + coord_cartesian(ylim = c(0, 15)), name = "Phenocycler_boxplot.zoom.with_controls", width = 4, height = 4.5)
 
     invisible(ctx)
 }
@@ -496,7 +615,6 @@ plot_viral_gene_ref = function(viral_genes_df, highlight_genes){
     head(viral_genes_df)
     viral_genes_df$gene_label %>% table
     viral_genes_df$gene_label = factor(viral_genes_df$gene_label)
-    ?relevel
 
     lev_o =c(setdiff(levels(viral_genes_df$gene_label), "other"), "other")
     lev_o = rev(lev_o)

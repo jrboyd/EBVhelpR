@@ -5,14 +5,21 @@ library(tidyverse)
 source("presentation_figures_v4_helpers.R")
 
 # Change this to your preferred output root.
-res_dir <- "output_presentation_04092026_v6"
+res_dir <- "output_presentation_04092026_v7"
 
 meta_df = load_meta_data()
 meta_df = meta_df %>% filter(sample_type != "control")
+# cq = CellQuery()
+# cq@summary_df %>% filter(sample_type == "control")
+# EBVhelpR::setup_wgs_files()
+# EBVhelpR::cq
+# EBVhelpR::load_wgs_count_summary()
+# meta_df = meta_df %>% filter(sample_type != "control")
 
 all_ids = meta_df$sample_id
-ids_by_type = split(all_ids, sub("_.+", "", all_ids))
-run_names = c("CTEBV" = "control", "D" = "DLBCL")
+ids_by_type = split(all_ids, meta_df$sample_type)
+names(ids_by_type)
+run_names = c("donor" = "control", "patient" = "DLBCL", "control" = "cell lines")
 names(ids_by_type) = run_names[names(ids_by_type)]
 
 ids_by_type$all_samples = all_ids
@@ -33,6 +40,9 @@ for(name in names(ids_by_type)){
     ctx = pf_section_overlap_selection(ctx)
     ctx = pf_section_apply_final_ids(ctx)
     ctx = pf_section_wgs_replots(ctx)
+
+    #pull out and inject control cell line data
+
     ctx = pf_section_scope_summary_plots(ctx)
     ctx = pf_section_save_cell_queries(ctx)
     ctx = pf_section_scope_correlations(ctx)
@@ -75,7 +85,6 @@ for(name in names(ids_by_type)){
 # head(high_df)
 # high_df$gene_label %>% table
 # high_df$gene_label = factor(high_df$gene_label)
-# ?relevel
 #
 # lev_o =c(setdiff(levels(high_df$gene_label), "other"), "other")
 # lev_o = rev(lev_o)

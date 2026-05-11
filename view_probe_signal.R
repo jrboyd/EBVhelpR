@@ -173,8 +173,8 @@ master_plot_validation = function(cq){
 }
 
 cq = all_cqs$RNAScope_4plex
-all_vplots = lapply(all_cqs, master_plot_validation)
-all_vplots$RNAScope_4plex$CTEBV_11
+# all_vplots = lapply(all_cqs, master_plot_validation)
+# all_vplots$RNAScope_4plex$CTEBV_11
 
 view_cell_density = function(cq, bin_sizes){
     cdata = load_query_cell_data(cq)
@@ -207,6 +207,14 @@ view_cell_density.positive = function(cq, bin_sizes){
     })
     all_plots
 }
+
+cq = all_cqs$Phenocycler
+cq = set_selected_unique_ids(cq, cq@selected_unique_ids[1])
+cdata = load_query_cell_data(cq)
+cns = colnames(cdata)
+pos_cns = cns[grepl("Posit", cns)]
+groups = sapply(strsplit(sub("c.Myc", "CMyc", pos_cns), "\\."), function(x)x[3])
+pos_cns.by_group = split(pos_cns, groups)
 
 region_colors = seqsetvis::safeBrew(names(pos_cns.by_group))
 region_colors["Classification"] = "yellow"
