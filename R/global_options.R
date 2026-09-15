@@ -32,12 +32,16 @@ names(project_name_to_assay) = assay_to_project_name
 }
 
 
-#' Title
+#' Colors used for each EBER status
 #'
-#' @returns
+#' Reads the packaged palette so that EBER status colors stay consistent across
+#' every figure.
+#'
+#' @returns A named character vector of colors, named by EBER status.
 #' @export
 #'
 #' @examples
+#' get_colors_EBER_status()
 get_colors_EBER_status = function(){
     readRDS(system.file("extdata/colors_EBER_status.Rds", package = "EBVhelpR", mustWork = TRUE))
 }
@@ -180,16 +184,61 @@ EBV_OPAL_DECODE$`RNAScope_3plex+IF` = c(
 )
 
 
-#' Named by OpalDye string and value are targets
+#' Opal dye to target decode for the RNAscope panels
 #'
-#' Named list of channel names.
+#' Named list, one character vector per RNAscope assay, whose names are Opal dye
+#' strings and whose values are the targets those dyes label. `Phenocycler` is
+#' absent, so `EBV_OPAL_DECODE[["Phenocycler"]]` is `NULL`.
 #'
-#' @format A named list with three character elements:
+#' @section Unusable channels:
+#' Not every dye listed here yields usable data. `Opal690` is present in the
+#' images but is **not** in either per-cell export, so only three of the four
+#' probes reach the user per cell. Check [EBV_OPAL_USABLE] before assuming a
+#' target exists; the entries are kept here because the channels really are in
+#' the images.
+#'
+#' The two failures differ. In `RNAScope_3plex+IF` (the EBNA1 antibody), Opal690
+#' is the channel most correlated with the dedicated autofluorescence channel in
+#' all three images tested (Spearman rho 0.33-0.52, partial on DAPI; two to ten
+#' times any other Opal) and has no zero-pixel population, sitting on a floor of
+#' 2.5-2.9 where Opal520/570 sit at exactly 0.00 — it is measuring
+#' autofluorescence. In `RNAScope_4plex` (EBNA3) it is simply empty: dynamic
+#' range 1.2x above background and rho -0.002 against autofluorescence, while
+#' Opal520 (EBER1) in the same image gives 42x.
+#'
+#' @format A named list of two character vectors, each of length four, named by
+#'   Opal dye:
 #' \describe{
-#'   \item{RNAScope_4plex}{`"RNAScope_4plex"`}
-#'   \item{RNAScope_3plex+IF}{`"RNAScope_3plex+IF"`}
+#'   \item{RNAScope_4plex}{`Opal520` EBER, `Opal620` EBNA2, `Opal570` LMP1,
+#'     `Opal690` EBNA3 (unusable).}
+#'   \item{RNAScope_3plex+IF}{`Opal520` EBER, `Opal620` EBNA1, `Opal570` LMP1,
+#'     `Opal690` EBNA1-Ab (unusable).}
 #' }
+#' @seealso [EBV_OPAL_USABLE]
 #' @examples
 #' EBV_OPAL_DECODE$RNAScope_4plex
 #' @export
 EBV_OPAL_DECODE = EBV_OPAL_DECODE
+
+EBV_OPAL_USABLE = lapply(EBV_OPAL_DECODE, function(x){
+    stats::setNames(names(x) != "Opal690", names(x))
+})
+
+#' Which Opal channels carry usable signal
+#'
+#' Mirrors [EBV_OPAL_DECODE] in shape, with a logical per Opal dye. `Opal690` is
+#' `FALSE` in both RNAscope panels — in `RNAScope_3plex+IF` it measures
+#' autofluorescence, in `RNAScope_4plex` it is empty. See the Unusable channels
+#' section of [EBV_OPAL_DECODE] for the supporting measurements.
+#'
+#' Use this rather than assuming every target in `EBV_OPAL_DECODE` reached the
+#' per-cell export: `Opal690` did not.
+#'
+#' @format A named list of two logical vectors, named by Opal dye, matching the
+#'   layout of [EBV_OPAL_DECODE].
+#' @seealso [EBV_OPAL_DECODE]
+#' @examples
+#' # targets that actually carry signal for the 4plex panel
+#' EBV_OPAL_DECODE$RNAScope_4plex[EBV_OPAL_USABLE$RNAScope_4plex]
+#' @export
+EBV_OPAL_USABLE = EBV_OPAL_USABLE

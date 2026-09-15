@@ -6,11 +6,20 @@
     if (!is.character(object@selected_sample_ids)) {
         return("`selected_sample_ids` must be a character vector.")
     }
-    all_sample_ids <- .get_sample_ids(object@all_cell_files_df)
-    if (length(all_sample_ids)) {
-        is_valid <- object@selected_sample_ids %in% all_sample_ids
-        if (!all(is_valid)) {
-            return("All `selected_sample_ids` must be present in `all_cell_files_df`.")
+    if (!is.character(object@selected_unique_ids)) {
+        return("`selected_unique_ids` must be a character vector.")
+    }
+    # Validate against the union of all three tables, not `all_cell_files_df`
+    # alone: a sample can legitimately appear in `summary_df` while being absent
+    # from `all_cell_files_df` (for example when its image was dropped because it
+    # contained multiple samples).
+    lookup <- .build_id_lookup(object)
+    if (nrow(lookup)) {
+        if (!all(object@selected_sample_ids %in% lookup$sample_id)) {
+            return("All `selected_sample_ids` must be present in one of `summary_df`, `all_cell_files_df` or `tiff_paths_df`.")
+        }
+        if (!all(object@selected_unique_ids %in% lookup$unique_id)) {
+            return("All `selected_unique_ids` must be present in one of `summary_df`, `all_cell_files_df` or `tiff_paths_df`.")
         }
     }
     TRUE
@@ -20,9 +29,15 @@
 #'
 #' S4 class for storing data used during cell-query image retrieval workflows.
 #'
+#' @slot summary_df Data frame of assay summary rows.
 #' @slot all_cell_files_df Data frame of all available cell files.
 #' @slot meta_data_df Data frame returned by [load_meta_data()].
-#' @slot selected_sample_ids Character vector of selected sample ids.
+#' @slot selected_sample_ids Character vector of selected sample ids. Kept in
+#'   sync with `selected_unique_ids` by [set_selected_sample_ids()] and
+#'   [set_selected_unique_ids()].
+#' @slot selected_unique_ids Character vector of selected unique ids, where a
+#'   unique id is the `sample_id` for cohort rows and
+#'   `paste(sample_id, probe_control)` for probe-control rows.
 #' @slot tiff_paths_df Data frame mapping samples to TIFF image paths.
 #' @slot assay_type Character scalar indicating assay type (for example,
 #'   `"RNAScope_4plex"`).
@@ -105,7 +120,7 @@ CellQuery <- function(
     all_cell_files_df = .df_prep(all_cell_files_df)
     tiff_paths_df = .df_prep(tiff_paths_df)
 
-    selected_unique_ids = all_cell_files_df$sample_id %>% unique
+    selected_unique_ids = all_cell_files_df$unique_id %>% unique
 
     obj <- methods::new(
         "CellQueryInfo",
@@ -149,6 +164,41 @@ CellQuery <- function(
         return(character(0))
     }
     unique(as.character(stats::na.omit(df[[sample_col]])))
+}
+
+#' Build the sample_id / unique_id correspondence for a query
+#'
+#' Collects every `sample_id`/`unique_id` pair known to the object, taking the
+#' union across `summary_df`, `all_cell_files_df` and `tiff_paths_df`. The union
+#' matters: a sample can be present in `summary_df` but absent from
+#' `all_cell_files_df` (for example `D_EB_33`, whose image was dropped because it
+#' held two samples), and selecting on only one table silently loses it.
+#'
+#' @param object A [CellQueryInfo-class] object.
+#' @return A two column data frame of unique `sample_id`/`unique_id` pairs.
+#' @noRd
+.build_id_lookup <- function(object) {
+    dfs <- list(object@summary_df, object@all_cell_files_df, object@tiff_paths_df)
+    pairs <- lapply(dfs, function(df) {
+        if (!nrow(df) || !all(c("sample_id", "unique_id") %in% colnames(df))) {
+            return(NULL)
+        }
+        data.frame(
+            sample_id = as.character(df$sample_id),
+            unique_id = as.character(df$unique_id),
+            stringsAsFactors = FALSE
+        )
+    })
+    pairs <- pairs[!vapply(pairs, is.null, logical(1))]
+    if (!length(pairs)) {
+        return(data.frame(
+            sample_id = character(0),
+            unique_id = character(0),
+            stringsAsFactors = FALSE
+        ))
+    }
+    lookup <- unique(do.call(rbind, pairs))
+    lookup[!is.na(lookup$sample_id) & !is.na(lookup$unique_id), , drop = FALSE]
 }
 
 .filter_by_selected_sample_ids <- function(df, selected_sample_ids, sample_col = "sample_id") {
@@ -200,11 +250,15 @@ CellQuery <- function(
         unique_ids, "unique_id"
     )
 
-    object@selected_sample_ids <- intersect(object@selected_sample_ids, sample_ids)
-    object@selected_sample_ids <- unique(as.character(object@selected_sample_ids))
-
+    # Narrow the unique-id selection, then re-derive `selected_sample_ids` from
+    # it against the newly filtered tables so the two keys stay in sync.
+    unique_ids <- unique(as.character(unique_ids))
     object@selected_unique_ids <- intersect(object@selected_unique_ids, unique_ids)
-    object@selected_unique_ids <- unique(as.character(object@selected_unique_ids))
+
+    lookup <- .build_id_lookup(object)
+    object@selected_sample_ids <- unique(
+        lookup$sample_id[lookup$unique_id %in% object@selected_unique_ids]
+    )
 
     methods::validObject(object)
     object
@@ -280,7 +334,7 @@ get_query_cell_files_df <- function(object, selected_only = TRUE) {
     if (!selected_only) {
         return(object@all_cell_files_df)
     }
-    .filter_by_selected_sample_ids(object@all_cell_files_df, object@selected_unique_ids, sample_col = "unique_id") %>%
+    .filter_by_selected_sample_ids(object@all_cell_files_df, object@selected_sample_ids) %>%
         .filter_by_selected_sample_ids(., object@selected_unique_ids, sample_col = "unique_id")
 }
 
@@ -303,36 +357,79 @@ get_query_tiff_paths_df <- function(object, selected_only = TRUE) {
         .filter_by_selected_sample_ids(., object@selected_unique_ids, sample_col = "unique_id")
 }
 
+.warn_unknown_ids <- function(requested, known, what) {
+    unknown <- setdiff(requested, known)
+    if (length(unknown)) {
+        warning(
+            "Dropping ", length(unknown), " requested ", what,
+            " not present in this query: ",
+            paste(utils::head(unknown, 10), collapse = ", "),
+            if (length(unknown) > 10) ", ..." else "",
+            call. = FALSE
+        )
+    }
+    intersect(requested, known)
+}
+
 #' Set Selected Sample IDs
+#'
+#' Sets `selected_sample_ids` and derives the matching `selected_unique_ids`, so
+#' that the two selection keys can never disagree. Requested ids that are not
+#' present in the query are dropped with a warning.
 #'
 #' @param object A [CellQueryInfo-class] object.
 #' @param selected_sample_ids Character vector of selected sample ids.
 #'
 #' @return Updated [CellQueryInfo-class] object.
+#' @seealso [set_selected_unique_ids()]
 #' @examples
 #' q <- CellQuery()
 #' q <- set_selected_sample_ids(q, head(get_query_summary_df(q)$sample_id, 2))
 #' @export
 set_selected_sample_ids <- function(object, selected_sample_ids) {
     stopifnot(methods::is(object, "CellQueryInfo"))
-    object@selected_sample_ids <- unique(as.character(selected_sample_ids))
+    lookup <- .build_id_lookup(object)
+    selected_sample_ids <- unique(as.character(selected_sample_ids))
+    selected_sample_ids <- .warn_unknown_ids(
+        selected_sample_ids, unique(lookup$sample_id), "sample_id(s)"
+    )
+    object@selected_sample_ids <- selected_sample_ids
+    object@selected_unique_ids <- unique(
+        lookup$unique_id[lookup$sample_id %in% selected_sample_ids]
+    )
     methods::validObject(object)
     object
 }
 
-#' Set Selected Sample IDs
+#' Set Selected Unique IDs
+#'
+#' Sets `selected_unique_ids` and derives the matching `selected_sample_ids`, so
+#' that the two selection keys can never disagree. Requested ids that are not
+#' present in the query are dropped with a warning.
+#'
+#' A unique id is the `sample_id` for cohort rows and
+#' `paste(sample_id, probe_control)` for probe-control rows.
 #'
 #' @param object A [CellQueryInfo-class] object.
-#' @param selected_sample_ids Character vector of selected sample ids.
+#' @param selected_unique_ids Character vector of selected unique ids.
 #'
 #' @return Updated [CellQueryInfo-class] object.
+#' @seealso [set_selected_sample_ids()]
 #' @examples
 #' q <- CellQuery()
-#' q <- set_selected_sample_ids(q, head(get_query_summary_df(q)$sample_id, 2))
+#' q <- set_selected_unique_ids(q, head(get_query_summary_df(q)$unique_id, 2))
 #' @export
 set_selected_unique_ids <- function(object, selected_unique_ids) {
     stopifnot(methods::is(object, "CellQueryInfo"))
-    object@selected_unique_ids <- unique(as.character(selected_unique_ids))
+    lookup <- .build_id_lookup(object)
+    selected_unique_ids <- unique(as.character(selected_unique_ids))
+    selected_unique_ids <- .warn_unknown_ids(
+        selected_unique_ids, unique(lookup$unique_id), "unique_id(s)"
+    )
+    object@selected_unique_ids <- selected_unique_ids
+    object@selected_sample_ids <- unique(
+        lookup$sample_id[lookup$unique_id %in% selected_unique_ids]
+    )
     methods::validObject(object)
     object
 }

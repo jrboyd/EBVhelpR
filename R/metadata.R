@@ -38,18 +38,28 @@
 #' Reads the packaged EBER annotation file, standardizes sample_id naming, and
 #' expands composite entries into one row per sample_id.
 #'
-#' @return A data frame with columns `sample_id` and `EBER_status`.
+#' @return A data frame with columns `sample_id`, `EBER_status` and
+#'   `sample_type`.
 #' @examples
 #' \dontrun{
 #' meta_df <- load_meta_data()
 #' }
 #' @export
 load_meta_data <- function() {
-  meta_df <- openxlsx::read.xlsx(.get_status_file())
+  status_file <- .get_status_file()
+  meta_df <- openxlsx::read.xlsx(status_file)
+  # `Notes` is dropped before the column count is checked, so a sheet whose only
+  # third column is Notes is correctly reported as too narrow.
   meta_df$Notes = NULL
 
-  if (ncol(meta_df) < 2) {
-    stop("EBER status sheet must have at least two columns.", call. = FALSE)
+  if (ncol(meta_df) < 3) {
+    stop(
+      "EBER status sheet must have at least three columns ",
+      "(sample_id, EBER_status, sample_type) after dropping `Notes`, but ",
+      basename(status_file), " has ", ncol(meta_df), ": ",
+      paste(colnames(meta_df), collapse = ", "),
+      call. = FALSE
+    )
   }
 
   colnames(meta_df)[1:3] <- c("sample_id", "EBER_status", "sample_type")

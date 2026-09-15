@@ -86,6 +86,8 @@
 #' [CellQueryInfo-class] object and combines them into one data frame.
 #'
 #' @param object A [CellQueryInfo-class] object.
+#' @param sample_col Column of the TIFF path table used to match selected
+#'   samples; defaults to `"unique_id"`.
 #'
 #' @return Data frame containing bound rows from selected cell data files,
 #'   including a `sample_id` column.
@@ -219,6 +221,11 @@ select_representative_cells <- function(
 #' @param cell_data_store Optional [CellDataStore-class] object. If provided,
 #'   all cells in the full data frame will be annotated in the background.
 #' @param background_cell_color Color to use for background cell annotations.
+#' @param red_channel,green_channel,blue_channel Channel indices mapped to the
+#'   red, green and blue display channels of each crop. See [EBV_CHANNELS] for
+#'   the channel order of each assay.
+#' @param sample_col Column used to group cells by sample; defaults to
+#'   `"unique_id"`.
 #'   Defaults to "lightblue".
 #'
 #' @return A named list keyed by sample id where each element is a list of
@@ -259,7 +266,7 @@ fetch_representative_tiff_images <- function(
     }
 
     sample_ids <- names(sampled_cells)
-    image_files <- setNames(
+    image_files <- stats::setNames(
         sapply(sample_ids, function(x) .find_tiff_file_by_sample(object, x)),
         sample_ids
     )

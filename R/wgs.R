@@ -12,6 +12,21 @@
   cols
 }
 
+#' Collapse technical replicate suffixes onto known sample ids
+#'
+#' Strips a trailing `_1`/`_2` when — and only when — the stripped form is a
+#' known metadata id, so technical replicates such as `D_EB_65_1`/`D_EB_65_2`
+#' resolve to `D_EB_65`. This is load-bearing for `D_EB_65/66/67`.
+#'
+#' Downstream, [load_wgs_count_summary()] sums reads across the collapsed id, so
+#' two files landing on one id are pooled. That currently never happens
+#' (51 files produce 51 ids) — the warning exists so that it cannot start
+#' happening silently.
+#'
+#' @param sample Character vector of sample ids parsed from file names.
+#' @param known_ids Character vector of ids known to the metadata.
+#' @return `sample` with replicate suffixes collapsed where they resolve.
+#' @noRd
 .harmonize_bigwig_sample_ids <- function(sample, known_ids) {
   out <- as.character(sample)
   known_ids <- unique(as.character(known_ids))
@@ -23,6 +38,27 @@
   miss <- !(out %in% known_ids)
   out1 <- sub("_1$", "", out)
   out[miss & out1 %in% known_ids] <- out1[miss & out1 %in% known_ids]
+
+  changed <- out != as.character(sample)
+  if (any(changed)) {
+    message(
+      "Collapsed technical replicate suffix for ", sum(changed), " sample id(s): ",
+      paste(
+        utils::head(paste0(as.character(sample)[changed], " -> ", out[changed]), 10),
+        collapse = ", "
+      ),
+      if (sum(changed) > 10) ", ..." else ""
+    )
+  }
+
+  pooled <- unique(out[duplicated(out)])
+  if (length(pooled)) {
+    warning(
+      "Harmonizing sample ids pooled multiple files onto the same id, whose ",
+      "reads will be summed: ", paste(pooled, collapse = ", "),
+      call. = FALSE
+    )
+  }
 
   out
 }
@@ -57,12 +93,18 @@ setup_wgs_files <- function(
   }
 
   if (is.null(wgs_root_dir)) {
+    env_dir <- Sys.getenv("EBVHELPER_WGS_DIR", unset = "")
     win_dir <- "C:/Users/boydj/OneDrive - UVM Larner College of Medicine/projects_ashley/EBV_DLBCL/P2_viral_WGS"
     lin_dir <- "/gpfs1/pi/avolaric/files_jrboyd/P2_viral_WGS"
-    candidates <- c(win_dir, lin_dir)
+    candidates <- c(env_dir, win_dir, lin_dir)
+    candidates <- candidates[nzchar(candidates)]
     existing <- candidates[dir.exists(candidates)]
     if (!length(existing)) {
-      stop("Could not locate WGS data directory.", call. = FALSE)
+      stop(
+        "Could not locate WGS data directory. Set EBVHELPER_WGS_DIR or pass ",
+        "`wgs_root_dir` explicitly.",
+        call. = FALSE
+      )
     }
     wgs_root_dir <- existing[[1]]
   }
@@ -219,11 +261,25 @@ load_wgs_count_summary <- function(
 #' @param wgs_files_df Output from [setup_wgs_files()].
 #' @param genome_gr Genome ranges from [load_wgs_reference_genome()].
 #' @param viral_seqname Viral reference seqname to profile.
-#' @param smooth_n Moving-average window size.
+#' @param smooth_n Moving-average window size. Values of 1 or less skip
+#'   smoothing entirely, which is what you want when a downstream step (such as
+#'   a per-bin median) is doing the smoothing instead.
 #' @param mc_cores Number of cores to pass to seqsetvis.
+#' @param ... Passed to [seqsetvis::ssvFetchBigwig()], for example
+#'   `win_method = "summary"` and `win_size = 5000`.
 #'
 #' @return Data frame with columns including `sample`, `x`, `y`, and
 #'   `EBER_status`.
+#'
+#' @section Coordinates:
+#' `x` is shifted so the fetched region starts at zero
+#' (`x <- x - min(x)`), making it a window-centre offset rather than a reference
+#' coordinate. It is therefore about half a window off, and the offset depends
+#' on which samples were fetched. This matters when overlaying anything in true
+#' reference coordinates, such as the GFF gene track. To recover reference
+#' coordinates, use the returned `start`/`end` columns instead:
+#' `dplyr::mutate(pileup_df, x = (start + end) / 2)`.
+#'
 #' @import seqsetvis
 #' @export
 load_wgs_bigwig_pileup <- function(
@@ -392,7 +448,20 @@ plot_wgs_pileup_heatmap <- function(
   if (!is.null(wgs_count_summary)) {
     lvl <- levels(wgs_count_summary$sample_id)
     if (!is.null(lvl)) {
-      plot_df$sample <- factor(plot_df$sample, levels = lvl)
+      # Samples absent from `wgs_count_summary` would become NA under factor()
+      # and geom_tile would then draw every one of them stacked at a single y
+      # position. Drop them explicitly instead.
+      dropped <- setdiff(unique(as.character(plot_df$sample)), lvl)
+      if (length(dropped)) {
+        warning(
+          "Dropping ", length(dropped), " sample(s) absent from `wgs_count_summary`: ",
+          paste(utils::head(dropped, 10), collapse = ", "),
+          if (length(dropped) > 10) ", ..." else "",
+          call. = FALSE
+        )
+        plot_df <- plot_df[!as.character(plot_df$sample) %in% dropped, , drop = FALSE]
+      }
+      plot_df$sample <- factor(as.character(plot_df$sample), levels = lvl)
     }
   }
 
@@ -422,8 +491,27 @@ plot_wgs_pileup_heatmap <- function(
 
   if (add_status_bar) {
     anno_dt <- unique(plot_df[, c("sample", "EBER_status")])
+    # The y position of each rect is the factor's integer code, so `sample` has
+    # to be a factor. It only is when `wgs_count_summary` supplied the levels;
+    # otherwise as.numeric() on a character vector silently yields all NA and
+    # the whole status bar disappears.
+    if (!is.factor(anno_dt$sample)) {
+      anno_dt$sample <- factor(anno_dt$sample, levels = sort(unique(as.character(anno_dt$sample))))
+    }
     anno_dt <- anno_dt[order(anno_dt$sample), , drop = FALSE]
-    x_max <- max(plot_df$x)
+
+    anno_status <- as.character(anno_dt$EBER_status)
+    unmapped <- setdiff(unique(anno_status), names(status_colors))
+    if (length(unmapped)) {
+      stop(
+        "No color supplied for EBER_status value(s): ",
+        paste(unmapped, collapse = ", "),
+        ". Add them to `status_colors` or pass `status_colors = NULL` to use the default palette.",
+        call. = FALSE
+      )
+    }
+
+    x_max <- max(plot_df$x, na.rm = TRUE)
     anno_dt$xmin <- -x_max * 0.07
     anno_dt$xmax <- -x_max * 0.025
     anno_dt$ymin <- as.numeric(anno_dt$sample) - 0.5
@@ -435,8 +523,8 @@ plot_wgs_pileup_heatmap <- function(
       xmax = anno_dt$xmax,
       ymin = anno_dt$ymin,
       ymax = anno_dt$ymax,
-      fill = status_colors[anno_dt$EBER_status],
-      color = status_colors[anno_dt$EBER_status]
+      fill = status_colors[anno_status],
+      color = status_colors[anno_status]
     )
   }
 

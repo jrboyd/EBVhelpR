@@ -117,15 +117,12 @@ A fresh install cannot resolve it.
 
 ### 12. Uncommitted source that downstream analysis now depends on
 
-`R/wgs.R` and `R/cell_query_workflow.R` are modified, three R files deleted, most
-of `man/` modified. The installed 0.1.5 build (2026-05-12) contains these edits;
-the last commit does not.
-
-`paper1_enhanced_EBV_detection/despike_wgs.R` requires the `...` passthrough and
-the `if (smooth_n > 1)` guard in `load_wgs_bigwig_pileup()`. **A reinstall from
-HEAD breaks the de-spiking and everything built on it.** Worth committing first.
-
----
+**RESOLVED** by commit `562b173` (2026-09-15), which committed `R/wgs.R`,
+`R/cell_query_workflow.R`, the deleted dev scripts and the regenerated `man/`.
+The `...` passthrough and the `if (smooth_n > 1)` guard in
+`load_wgs_bigwig_pileup()` that `paper1_enhanced_EBV_detection/despike_wgs.R`
+relies on are both in HEAD, so a reinstall from HEAD is now safe — and is in
+fact required by item 17.
 
 ## Semantics worth documenting rather than changing
 
@@ -176,6 +173,27 @@ not PDL1 ∩ CD20.
 
 **Fix:** rename on import in `load_phenocycler_summary_files()` to
 `CD4_pos_Tcells` / `CD4_neg_Tcells` etc., and assert the complement relationship.
+
+
+**Correction (verified 2026-09-15).** `make.names()` is called **nowhere in this
+package** — `readr::read_csv()` preserves `CD4+TCells` verbatim, which is why
+`load_phenocycler_summary_files()` has to backtick-quote `` `Image Tag` ``. The
+collision is introduced downstream in the analysis project, on any
+`as.data.frame()` / `read.csv()` / `check.names = TRUE` path. The rename
+therefore has to happen at import, which is the last point where `+` and `−`
+still exist.
+
+Two further corrections to the detail above:
+
+- The real column names carry a ` Cells` suffix (`CD4+TCells Cells`) and each
+  gate also has a `% ... Positive Cells` twin. Both need renaming.
+- There is **no `CD3` column** in the summary export, so the stated assertion
+  cannot be written there. The equivalent invariant
+  `CD4+ + CD4− == CD8+ + CD8−` (both being the CD3⁺ count) can be, and was
+  verified to hold exactly on all 44 rows across all 6 summary files.
+
+Also confirmed: cached derived artifacts under `output_cell_views_*` were
+written with the mangled names and would need regenerating to benefit.
 
 ---
 

@@ -30,13 +30,20 @@ before TIFF extraction.}
 \item{max_images_per_sample}{Maximum number of representative cells/TIFF crops
 to return per sample.}
 
+\item{red_channel, green_channel, blue_channel}{Channel indices mapped to the
+red, green and blue display channels of each crop. See \link{EBV_CHANNELS} for
+the channel order of each assay.}
+
 \item{annotate_color}{Annotation color passed to
 \code{\link[TiffPlotR:rect_annotate]{TiffPlotR::rect_annotate()}}.}
 
 \item{cell_data_store}{Optional \link[=CellDataStore-class]{CellDataStore} object. If provided,
 all cells in the full data frame will be annotated in the background.}
 
-\item{background_cell_color}{Color to use for background cell annotations.
+\item{background_cell_color}{Color to use for background cell annotations.}
+
+\item{sample_col}{Column used to group cells by sample; defaults to
+\code{"unique_id"}.
 Defaults to "lightblue".}
 }
 \value{

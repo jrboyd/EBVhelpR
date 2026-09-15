@@ -95,20 +95,24 @@ write_package_data_for_file <- function(file) {
   obj_dat.by_image <- split(obj_dat, obj_dat$ImageLocation)
   obj_images <- names(obj_dat.by_image)
 
-  if (basename(file) == "RNAScope_CellPellet_ObjectData_Cleaned_2026-01-12.csv") {
-    str_extract <- function(x, delim = "_") {
+  # This one export encodes the sample in the image name and has to be rebuilt
+  # from the "_"-delimited parts; every other export uses the name as-is. Named
+  # `.rebuild_name` rather than `str_extract` so it does not shadow
+  # stringr::str_extract, and defined once so the signature is stable.
+  .rebuild_name <- if (basename(file) == "RNAScope_CellPellet_ObjectData_Cleaned_2026-01-12.csv") {
+    function(x, delim = "_") {
       vapply(strsplit(x, delim), function(parts) {
         paste(parts[length(parts)], parts[length(parts) - 2], sep = "_")
       }, character(1))
     }
   } else {
-    str_extract <- function(x) x
+    function(x, delim = "_") x
   }
 
   obj_names <- gsub("\\\\", "/", obj_images)
   obj_names <- basename(obj_names)
   obj_names <- sub("\\..+", "", obj_names)
-  obj_names <- str_extract(obj_names)
+  obj_names <- .rebuild_name(obj_names)
 
   img_meta_df <- data.frame(image_name = obj_names, image = obj_images, stringsAsFactors = FALSE)
   for (col in colnames(obj_singletons)) {
@@ -132,38 +136,57 @@ write_package_data_for_file <- function(file) {
     readr::write_csv(obj_dat.sel, out_f)
   }
 
-  write.csv(img_meta_df, out_meta_file)
+  utils::write.csv(img_meta_df, out_meta_file)
   invisible(out_meta_file)
 }
 
 .get_example_images_df = function(){
     f = system.file(package = "EBVhelpR", "extdata/images_on_vacc.csv", mustWork = TRUE)
-    tiff_df = read.csv(f)
+    tiff_df = utils::read.csv(f)
     tiff_df$name = NULL
     tiff_df$tiff_location = "EXAMPLE_ONLY"
     tiff_df
 }
 
 
-#' Title
+#' Map samples to TIFF image file paths
 #'
-#' @returns
+#' Resolves the TIFF image root by checking `EBVHELPER_IMAGE_DIR` first, then
+#' known default paths, and builds the sample to image path table for every
+#' recognized project directory found there.
+#'
+#' The images have been relocated before (for disk space), so the environment
+#' variable is the supported way to point at a new location. It also takes
+#' precedence over the `Z:` mapped drive, which otherwise wins even when the
+#' mapping is stale.
+#'
+#' @returns A data frame mapping `sample_id` and `assay` to `tiff_file` paths.
+#'   If no image root is found, returns the packaged example table with
+#'   `tiff_location` set to the literal string `"EXAMPLE_ONLY"` and warns.
 #' @export
 #'
 #' @examples
+#' \dontrun{
+#' tiff_df <- get_tiff_file_path_df()
+#' }
 get_tiff_file_path_df = function(){
+    env_dir = Sys.getenv("EBVHELPER_IMAGE_DIR", unset = "")
     win_dir = "Z:/FUSION DATA/AshleyVolaric"
     win_dir2 = "C:/Users/boydj/project_data/EBV_image_files"
+    win_dir3 = "G:/project_data/EBV_image_files"
     lin_dir = "/netfiles/volaric_research/DLBCL_EBV_detection/image_files"
-    tiff_dir = win_dir
-    if(!dir.exists(tiff_dir)){
-        tiff_dir = lin_dir
-    }
-    if(!dir.exists(tiff_dir)){
-        tiff_dir = win_dir2
-    }
-    if(!dir.exists(tiff_dir)){
-        warning("Could not locate TIFF root directory. Returning example tiffs with fake paths.")
+
+    candidates = c(env_dir, win_dir, lin_dir, win_dir2, win_dir3)
+    candidates = candidates[nzchar(candidates)]
+    existing = candidates[dir.exists(candidates)]
+    tiff_dir = if(length(existing)) existing[[1]] else NA_character_
+
+    if(is.na(tiff_dir)){
+        warning(
+            "Could not locate TIFF root directory. Set EBVHELPER_IMAGE_DIR. ",
+            "Returning example tiffs whose tiff_location is the placeholder ",
+            "\"EXAMPLE_ONLY\" - these are NOT real image paths."
+        )
         tiff_df = .get_example_images_df()
         tiff_df$project_name = tiff_df$assay
         tiff_df$assay = project_name_to_assay[tiff_df$project_name]

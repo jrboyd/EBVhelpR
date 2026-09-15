@@ -66,7 +66,8 @@ cq_p.jrb@tiff_paths_df = EBVhelpR:::.df_prep(jrb_tiff_df)
 cq_p.jrb
 cq_p.jrb = filter_query_to_tiff_path_samples(cq_p.jrb)
 cq_p.jrb@assay_type = "Phenocycler_JRB"
-cq_p.jrb@selected_unique_ids = cq_p.jrb@selected_sample_ids
+# selection keys are kept in sync by the setters; the manual copy that used to
+# be here worked around selected_unique_ids being initialised from sample_id
 cq = cq_p.jrb
 
 all_cq = list(cq_r3i, cq_r4, cq_p, cq_p.jrb)

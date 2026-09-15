@@ -2,10 +2,28 @@
 % Please edit documentation in R/data_wrangling.R
 \name{get_tiff_file_path_df}
 \alias{get_tiff_file_path_df}
-\title{Title}
+\title{Map samples to TIFF image file paths}
 \usage{
 get_tiff_file_path_df()
 }
+\value{
+A data frame mapping \code{sample_id} and \code{assay} to \code{tiff_file} paths.
+If no image root is found, returns the packaged example table with
+\code{tiff_location} set to the literal string \code{"EXAMPLE_ONLY"} and warns.
+}
 \description{
-Title
+Resolves the TIFF image root by checking \code{EBVHELPER_IMAGE_DIR} first, then
+known default paths, and builds the sample to image path table for every
+recognized project directory found there.
+}
+\details{
+The images have been relocated before (for disk space), so the environment
+variable is the supported way to point at a new location. It also takes
+precedence over the \verb{Z:} mapped drive, which otherwise wins even when the
+mapping is stale.
+}
+\examples{
+\dontrun{
+tiff_df <- get_tiff_file_path_df()
+}
 }

@@ -8,6 +8,9 @@ load_query_cell_data(object, sample_col = "unique_id")
 }
 \arguments{
 \item{object}{A \link[=CellQueryInfo-class]{CellQueryInfo} object.}
+
+\item{sample_col}{Column of the TIFF path table used to match selected
+samples; defaults to \code{"unique_id"}.}
 }
 \value{
 Data frame containing bound rows from selected cell data files,

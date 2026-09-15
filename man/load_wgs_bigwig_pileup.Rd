@@ -20,9 +20,14 @@ load_wgs_bigwig_pileup(
 
 \item{viral_seqname}{Viral reference seqname to profile.}
 
-\item{smooth_n}{Moving-average window size.}
+\item{smooth_n}{Moving-average window size. Values of 1 or less skip
+smoothing entirely, which is what you want when a downstream step (such as
+a per-bin median) is doing the smoothing instead.}
 
 \item{mc_cores}{Number of cores to pass to seqsetvis.}
+
+\item{...}{Passed to \code{\link[seqsetvis:ssvFetchBigwig]{seqsetvis::ssvFetchBigwig()}}, for example
+\code{win_method = "summary"} and \code{win_size = 5000}.}
 }
 \value{
 Data frame with columns including \code{sample}, \code{x}, \code{y}, and
@@ -32,3 +37,14 @@ Data frame with columns including \code{sample}, \code{x}, \code{y}, and
 Fetches normalized bigwig signal across the EBV reference and merges status
 metadata for downstream plotting.
 }
+\section{Coordinates}{
+
+\code{x} is shifted so the fetched region starts at zero
+(\code{x <- x - min(x)}), making it a window-centre offset rather than a reference
+coordinate. It is therefore about half a window off, and the offset depends
+on which samples were fetched. This matters when overlaying anything in true
+reference coordinates, such as the GFF gene track. To recover reference
+coordinates, use the returned \code{start}/\code{end} columns instead:
+\code{dplyr::mutate(pileup_df, x = (start + end) / 2)}.
+}
+

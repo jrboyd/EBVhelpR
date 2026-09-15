@@ -7,7 +7,8 @@
 load_meta_data()
 }
 \value{
-A data frame with columns \code{sample_id} and \code{EBER_status}.
+A data frame with columns \code{sample_id}, \code{EBER_status} and
+\code{sample_type}.
 }
 \description{
 Reads the packaged EBER annotation file, standardizes sample_id naming, and

@@ -2,10 +2,17 @@
 % Please edit documentation in R/global_options.R
 \name{get_colors_EBER_status}
 \alias{get_colors_EBER_status}
-\title{Title}
+\title{Colors used for each EBER status}
 \usage{
 get_colors_EBER_status()
 }
+\value{
+A named character vector of colors, named by EBER status.
+}
 \description{
-Title
+Reads the packaged palette so that EBER status colors stay consistent across
+every figure.
+}
+\examples{
+get_colors_EBER_status()
 }

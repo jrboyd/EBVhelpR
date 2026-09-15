@@ -2,22 +2,31 @@
 % Please edit documentation in R/query_class.R
 \name{set_selected_unique_ids}
 \alias{set_selected_unique_ids}
-\title{Set Selected Sample IDs}
+\title{Set Selected Unique IDs}
 \usage{
 set_selected_unique_ids(object, selected_unique_ids)
 }
 \arguments{
 \item{object}{A \link[=CellQueryInfo-class]{CellQueryInfo} object.}
 
-\item{selected_sample_ids}{Character vector of selected sample ids.}
+\item{selected_unique_ids}{Character vector of selected unique ids.}
 }
 \value{
 Updated \link[=CellQueryInfo-class]{CellQueryInfo} object.
 }
 \description{
-Set Selected Sample IDs
+Sets \code{selected_unique_ids} and derives the matching \code{selected_sample_ids}, so
+that the two selection keys can never disagree. Requested ids that are not
+present in the query are dropped with a warning.
+}
+\details{
+A unique id is the \code{sample_id} for cohort rows and
+\code{paste(sample_id, probe_control)} for probe-control rows.
 }
 \examples{
 q <- CellQuery()
-q <- set_selected_sample_ids(q, head(get_query_summary_df(q)$sample_id, 2))
+q <- set_selected_unique_ids(q, head(get_query_summary_df(q)$unique_id, 2))
+}
+\seealso{
+\code{\link[=set_selected_sample_ids]{set_selected_sample_ids()}}
 }

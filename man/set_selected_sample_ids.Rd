@@ -15,9 +15,14 @@ set_selected_sample_ids(object, selected_sample_ids)
 Updated \link[=CellQueryInfo-class]{CellQueryInfo} object.
 }
 \description{
-Set Selected Sample IDs
+Sets \code{selected_sample_ids} and derives the matching \code{selected_unique_ids}, so
+that the two selection keys can never disagree. Requested ids that are not
+present in the query are dropped with a warning.
 }
 \examples{
 q <- CellQuery()
 q <- set_selected_sample_ids(q, head(get_query_summary_df(q)$sample_id, 2))
+}
+\seealso{
+\code{\link[=set_selected_unique_ids]{set_selected_unique_ids()}}
 }

@@ -10,11 +10,19 @@ S4 class for storing data used during cell-query image retrieval workflows.
 \section{Slots}{
 
 \describe{
+\item{\code{summary_df}}{Data frame of assay summary rows.}
+
 \item{\code{all_cell_files_df}}{Data frame of all available cell files.}
 
 \item{\code{meta_data_df}}{Data frame returned by \code{\link[=load_meta_data]{load_meta_data()}}.}
 
-\item{\code{selected_sample_ids}}{Character vector of selected sample ids.}
+\item{\code{selected_sample_ids}}{Character vector of selected sample ids. Kept in
+sync with \code{selected_unique_ids} by \code{\link[=set_selected_sample_ids]{set_selected_sample_ids()}} and
+\code{\link[=set_selected_unique_ids]{set_selected_unique_ids()}}.}
+
+\item{\code{selected_unique_ids}}{Character vector of selected unique ids, where a
+unique id is the \code{sample_id} for cohort rows and
+\code{paste(sample_id, probe_control)} for probe-control rows.}
 
 \item{\code{tiff_paths_df}}{Data frame mapping samples to TIFF image paths.}
 

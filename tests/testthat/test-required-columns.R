@@ -44,6 +44,17 @@ test_that("load_cell_source_files returns required columns", {
   file.create(file.path(tmp_dir, "Phenocycler", "A_1.cell_data.csv"))
   file.create(file.path(tmp_dir, "Phenocycler", "CellPelletSlide_grp_PosCTL.cell_data.csv"))
 
+  # cell_counts.txt is a `wc -l`-style listing whose final line is the grand
+  # total; it must not survive as a data row.
+  writeLines(
+    c(
+      "     12 Phenocycler/A_1.cell_data.csv",
+      "     34 Phenocycler/CellPelletSlide_grp_PosCTL.cell_data.csv",
+      "     46 total"
+    ),
+    file.path(tmp_dir, "cell_counts.txt")
+  )
+
   testthat::local_mocked_bindings(
     get_wrangled_cell_data_dir = function() tmp_dir,
     load_meta_data = function() {
@@ -55,6 +66,9 @@ test_that("load_cell_source_files returns required columns", {
   out <- suppressWarnings(load_cell_source_files())
   expect_s3_class(out, "data.frame")
   expect_true(all(required_cols %in% colnames(out)))
+  # the trailing "total" line of cell_counts.txt must not become a sample
+  expect_false("total" %in% out$file)
+  expect_false("total" %in% out$sample_id)
 })
 
 test_that("get_tiff_file_path_df returns required columns", {

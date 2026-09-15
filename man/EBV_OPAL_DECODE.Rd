@@ -2,20 +2,46 @@
 % Please edit documentation in R/global_options.R
 \name{EBV_OPAL_DECODE}
 \alias{EBV_OPAL_DECODE}
-\title{Named by OpalDye string and value are targets}
+\title{Opal dye to target decode for the RNAscope panels}
 \format{
-A named list with three character elements:
+A named list of two character vectors, each of length four, named by
+Opal dye:
 \describe{
-\item{RNAScope_4plex}{\code{"RNAScope_4plex"}}
-\item{RNAScope_3plex+IF}{\code{"RNAScope_3plex+IF"}}
+\item{RNAScope_4plex}{\code{Opal520} EBER, \code{Opal620} EBNA2, \code{Opal570} LMP1,
+\code{Opal690} EBNA3 (unusable).}
+\item{RNAScope_3plex+IF}{\code{Opal520} EBER, \code{Opal620} EBNA1, \code{Opal570} LMP1,
+\code{Opal690} EBNA1-Ab (unusable).}
 }
 }
 \usage{
 EBV_OPAL_DECODE
 }
 \description{
-Named list of channel names.
+Named list, one character vector per RNAscope assay, whose names are Opal dye
+strings and whose values are the targets those dyes label. \code{Phenocycler} is
+absent, so \code{EBV_OPAL_DECODE[["Phenocycler"]]} is \code{NULL}.
 }
+\section{Unusable channels}{
+
+Not every dye listed here yields usable data. \code{Opal690} is present in the
+images but is \strong{not} in either per-cell export, so only three of the four
+probes reach the user per cell. Check \link{EBV_OPAL_USABLE} before assuming a
+target exists; the entries are kept here because the channels really are in
+the images.
+
+The two failures differ. In \code{RNAScope_3plex+IF} (the EBNA1 antibody), Opal690
+is the channel most correlated with the dedicated autofluorescence channel in
+all three images tested (Spearman rho 0.33-0.52, partial on DAPI; two to ten
+times any other Opal) and has no zero-pixel population, sitting on a floor of
+2.5-2.9 where Opal520/570 sit at exactly 0.00 — it is measuring
+autofluorescence. In \code{RNAScope_4plex} (EBNA3) it is simply empty: dynamic
+range 1.2x above background and rho -0.002 against autofluorescence, while
+Opal520 (EBER1) in the same image gives 42x.
+}
+
 \examples{
 EBV_OPAL_DECODE$RNAScope_4plex
+}
+\seealso{
+\link{EBV_OPAL_USABLE}
 }

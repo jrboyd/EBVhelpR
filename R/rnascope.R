@@ -226,12 +226,21 @@ load_cell_source_files <- function() {
 
     #add cell counts
     count_file = dir(get_wrangled_cell_data_dir(), pattern = "cell_counts.txt", full.names = TRUE)
-    tmp = read.table(count_file, sep = "\n")
+    if (length(count_file) != 1L) {
+        stop(
+            "Expected exactly one cell_counts.txt in ", get_wrangled_cell_data_dir(),
+            " but found ", length(count_file), ".",
+            call. = FALSE
+        )
+    }
+    tmp = utils::read.table(count_file, sep = "\n")
     tmp$V1 = sub(" +", "", tmp$V1)
     tmp$V1 = sub(" ", "\t", tmp$V1)
-    cell_counts = tmp %>% separate(V1, c("cell_count", "file"), sep = "\t")
+    cell_counts = tmp %>% tidyr::separate(V1, c("cell_count", "file"), sep = "\t")
     cell_counts$cell_count = as.numeric(cell_counts$cell_count)
-    #
+    # cell_counts.txt is a `wc -l`-style listing whose last line is the grand
+    # total; it is not a sample and must not become a data row.
+    cell_counts = cell_counts[cell_counts$file != "total", , drop = FALSE]
     final_df = merge(final_df, cell_counts, all.x = TRUE)
 
     final_df

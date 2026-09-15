@@ -53,10 +53,26 @@ get_original_cell_data_dir <- function() {
   existing[[1]]
 }
 
+#' Locate the EBER status sheet
+#'
+#' Prefers the copy installed with the package so that the same code gives the
+#' same EBER calls everywhere. An alternative sheet can be selected explicitly
+#' with `EBVHELPER_STATUS_FILE`; this used to happen implicitly via a hardcoded
+#' cluster path, which silently shadowed the packaged copy on the VACC.
+#'
+#' @return Character scalar path to the EBER status workbook.
+#' @noRd
 .get_status_file <- function() {
-  def_file <- "/gpfs1/pi/avolaric/files_jrboyd/EBVhelpR/inst/extdata/eber_status.xlsx"
-  if (file.exists(def_file)) {
-    return(def_file)
+  env_file <- Sys.getenv("EBVHELPER_STATUS_FILE", unset = "")
+  if (nzchar(env_file)) {
+    if (!file.exists(env_file)) {
+      stop(
+        "EBVHELPER_STATUS_FILE is set to a file that does not exist: ", env_file,
+        call. = FALSE
+      )
+    }
+    message("Using EBER status file from EBVHELPER_STATUS_FILE: ", env_file)
+    return(env_file)
   }
 
   pkg_file <- system.file("extdata", "eber_status.xlsx", package = "EBVhelpR")
