@@ -4,11 +4,11 @@
 \alias{EBV_ASSAY_TYPES}
 \title{Supported Assay Type Constants}
 \format{
-A named list of three character vectors, named by assay type:
+A named list of three character scalars, the assay type identifiers:
 \describe{
-\item{Phenocycler}{16 channels, DAPI first.}
-\item{RNAScope_4plex}{6 channels: DAPI, EBER1, EBNA2, LMP1, EBNA3, Autofluorescence.}
-\item{RNAScope_3plex+IF}{6 channels: DAPI, EBER, LMP1, EBNA1, EBNA1-Ab, Autofluorescence.}
+\item{Phenocycler}{\code{"Phenocycler"}}
+\item{RNAScope_4plex}{\code{"RNAScope_4plex"}}
+\item{RNAScope_3plex+IF}{\code{"RNAScope_3plex+IF"}}
 }
 }
 \usage{

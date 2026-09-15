@@ -3,11 +3,11 @@
 #' Named list of supported assay type identifiers used by data loaders,
 #' query constructors, and filtering helpers throughout the package.
 #'
-#' @format A named list of three character vectors, named by assay type:
+#' @format A named list of three character scalars, the assay type identifiers:
 #' \describe{
-#'   \item{Phenocycler}{16 channels, DAPI first.}
-#'   \item{RNAScope_4plex}{6 channels: DAPI, EBER1, EBNA2, LMP1, EBNA3, Autofluorescence.}
-#'   \item{RNAScope_3plex+IF}{6 channels: DAPI, EBER, LMP1, EBNA1, EBNA1-Ab, Autofluorescence.}
+#'   \item{Phenocycler}{`"Phenocycler"`}
+#'   \item{RNAScope_4plex}{`"RNAScope_4plex"`}
+#'   \item{RNAScope_3plex+IF}{`"RNAScope_3plex+IF"`}
 #' }
 #' @examples
 #' EBV_ASSAY_TYPES$RNAScope_4plex
