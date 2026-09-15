@@ -7,7 +7,7 @@
 get_original_cells_per_sample_id(object)
 }
 \arguments{
-\item{object}{A \linkS4class{CellDataStore} object.}
+\item{object}{A \link[=CellDataStore-class]{CellDataStore} object.}
 }
 \value{
 Data frame with \code{sample_id} and \code{n_cells_original} columns.

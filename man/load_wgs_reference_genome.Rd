@@ -7,11 +7,11 @@
 load_wgs_reference_genome()
 }
 \value{
-A \link[GenomicRanges:GRanges-class]{GenomicRanges::GRanges} object.
+A \link[GenomicRanges:GRanges]{GenomicRanges::GRanges} object.
 }
 \description{
 Reads the package chrSizes.txt file.
 }
 \details{
-\link[GenomicRanges:GRanges-class]{GenomicRanges::GRanges} object with sequence lengths set.
+\link[GenomicRanges:GRanges]{GenomicRanges::GRanges} object with sequence lengths set.
 }

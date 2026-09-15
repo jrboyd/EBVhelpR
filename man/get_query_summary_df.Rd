@@ -7,7 +7,7 @@
 get_query_summary_df(object, selected_only = TRUE)
 }
 \arguments{
-\item{object}{A \linkS4class{CellQueryInfo} object.}
+\item{object}{A \link[=CellQueryInfo-class]{CellQueryInfo} object.}
 
 \item{selected_only}{Logical; if \code{TRUE}, return only selected samples.}
 }

@@ -11,3 +11,7 @@ man.bu
 .vscode
 output*
 presentation_screenshots/
+.positai
+R/*-LAPTOP-T6S5THI3.R
+.cache*
+*png

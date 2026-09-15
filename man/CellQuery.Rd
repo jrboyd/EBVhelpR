@@ -11,7 +11,7 @@ CellQuery(assay_type = NULL)
 \code{EBV_ASSAY_TYPES$RNAScope_4plex}.}
 }
 \value{
-A validated \linkS4class{CellQueryInfo} object.
+A validated \link[=CellQueryInfo-class]{CellQueryInfo} object.
 }
 \description{
 Builds assay-specific summary, cell file, and TIFF path tables, and

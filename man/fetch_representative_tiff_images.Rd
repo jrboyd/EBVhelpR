@@ -19,7 +19,7 @@ fetch_representative_tiff_images(
 )
 }
 \arguments{
-\item{object}{A \linkS4class{CellQueryInfo} object.}
+\item{object}{A \link[=CellQueryInfo-class]{CellQueryInfo} object.}
 
 \item{sampled_cells}{Either a data frame containing a \code{sample_id} column or
 a named list of data frames split by sample id.}
@@ -33,7 +33,7 @@ to return per sample.}
 \item{annotate_color}{Annotation color passed to
 \code{\link[TiffPlotR:rect_annotate]{TiffPlotR::rect_annotate()}}.}
 
-\item{cell_data_store}{Optional \linkS4class{CellDataStore} object. If provided,
+\item{cell_data_store}{Optional \link[=CellDataStore-class]{CellDataStore} object. If provided,
 all cells in the full data frame will be annotated in the background.}
 
 \item{background_cell_color}{Color to use for background cell annotations.
@@ -44,7 +44,7 @@ A named list keyed by sample id where each element is a list of
 \code{TiffPlotR} image objects.
 }
 \description{
-Uses selected sample TIFF paths in a \linkS4class{CellQueryInfo} object and
+Uses selected sample TIFF paths in a \link[=CellQueryInfo-class]{CellQueryInfo} object and
 extracts representative annotated cell crops for each sample.
 }
 \examples{

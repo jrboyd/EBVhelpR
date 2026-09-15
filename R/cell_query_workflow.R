@@ -108,7 +108,7 @@ load_query_cell_data <- function(object, sample_col = "unique_id") {
     # cell_info_df %>% dplyr::select(file, sample_id, probe_control)
 
     get_query_tiff_paths_df(object)
-    tiff_df = cq@tiff_paths_df %>% dplyr::filter(!!sym(sample_col) %in% names(to_load))
+    tiff_df = object@tiff_paths_df %>% dplyr::filter(!!sym(sample_col) %in% names(to_load))
     to_verify = tiff_df$tiff_file
     names(to_verify) = to_load[tiff_df[[sample_col]]]
 

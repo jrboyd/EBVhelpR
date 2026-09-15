@@ -14,7 +14,7 @@ select_representative_cells(
 )
 }
 \arguments{
-\item{cell_df}{Cell-level data frame or a \linkS4class{CellDataStore} object.}
+\item{cell_df}{Cell-level data frame or a \link[=CellDataStore-class]{CellDataStore} object.}
 
 \item{marker_col}{Column name used for filtering.}
 

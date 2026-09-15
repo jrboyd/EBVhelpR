@@ -7,7 +7,7 @@
 load_query_cell_data(object, sample_col = "unique_id")
 }
 \arguments{
-\item{object}{A \linkS4class{CellQueryInfo} object.}
+\item{object}{A \link[=CellQueryInfo-class]{CellQueryInfo} object.}
 }
 \value{
 Data frame containing bound rows from selected cell data files,
@@ -15,7 +15,7 @@ including a \code{sample_id} column.
 }
 \description{
 Reads cell-level CSV files referenced by selected samples in a
-\linkS4class{CellQueryInfo} object and combines them into one data frame.
+\link[=CellQueryInfo-class]{CellQueryInfo} object and combines them into one data frame.
 }
 \examples{
 \dontrun{

@@ -10,10 +10,10 @@ new_cell_data_store(cell_df)
 \item{cell_df}{Cell-level data frame with a \code{sample_id} column.}
 }
 \value{
-A validated \linkS4class{CellDataStore} object.
+A validated \link[=CellDataStore-class]{CellDataStore} object.
 }
 \description{
-Creates a \linkS4class{CellDataStore} where \code{selected_df} is initialized to
+Creates a \link[=CellDataStore-class]{CellDataStore} where \code{selected_df} is initialized to
 \code{full_df}, and original per-sample cell counts are stored in
 \code{original_cells_per_sample_id}.
 }

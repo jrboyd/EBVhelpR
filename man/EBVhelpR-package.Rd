@@ -11,5 +11,10 @@ Support for analysis of EBV DLBCL project data - WGS, Phenocycler, RNAscope, cos
 \author{
 \strong{Maintainer}: Joseph Boyd \email{boydrj7@gmail.com}
 
+Authors:
+\itemize{
+  \item Joseph Boyd \email{boydrj7@gmail.com}
+}
+
 }
 \keyword{internal}

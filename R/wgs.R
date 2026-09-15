@@ -231,7 +231,8 @@ load_wgs_bigwig_pileup <- function(
   genome_gr,
   viral_seqname = "NC_007605.1",
   smooth_n = 50,
-  mc_cores = 1
+  mc_cores = 1,
+  ...
 ) {
   if (!all(c("sample_id", "bigwig_file") %in% colnames(wgs_files_df))) {
     stop("`wgs_files_df` must contain columns `sample_id` and `bigwig_file`.", call. = FALSE)
@@ -256,8 +257,11 @@ load_wgs_bigwig_pileup <- function(
   on.exit(options(mc.cores = old_cores), add = TRUE)
   options(mc.cores = mc_cores)
 
-  pileup_dt <- seqsetvis::ssvFetchBigwig(bw_df, qgr, return_data.table = TRUE)
-  pileup_dt <- seqsetvis::applyMovingAverage(pileup_dt, n = smooth_n)
+  pileup_dt <- seqsetvis::ssvFetchBigwig(bw_df, qgr, return_data.table = TRUE, ...)
+  if(smooth_n > 1){
+      pileup_dt <- seqsetvis::applyMovingAverage(pileup_dt, n = smooth_n)
+  }
+
 
   if (!"EBER_status" %in% colnames(wgs_files_df)) {
     bw_meta_df <- load_meta_data()[, c("sample_id", "EBER_status")]

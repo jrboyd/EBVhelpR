@@ -7,12 +7,12 @@
 filter_query_to_tiff_path_samples(object)
 }
 \arguments{
-\item{object}{A \linkS4class{CellQueryInfo} object.}
+\item{object}{A \link[=CellQueryInfo-class]{CellQueryInfo} object.}
 }
 \value{
-Updated \linkS4class{CellQueryInfo} object.
+Updated \link[=CellQueryInfo-class]{CellQueryInfo} object.
 }
 \description{
-Restricts all stored data frames in a \linkS4class{CellQueryInfo} object to
+Restricts all stored data frames in a \link[=CellQueryInfo-class]{CellQueryInfo} object to
 sample ids present in \code{tiff_paths_df}.
 }

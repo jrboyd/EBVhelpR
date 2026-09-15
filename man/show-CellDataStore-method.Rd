@@ -7,7 +7,7 @@
 \S4method{show}{CellDataStore}(object)
 }
 \arguments{
-\item{object}{A \linkS4class{CellDataStore} object.}
+\item{object}{A \link[=CellDataStore-class]{CellDataStore} object.}
 }
 \value{
 Invisibly returns \code{object}.

@@ -7,7 +7,7 @@
 get_full_cell_data(object)
 }
 \arguments{
-\item{object}{A \linkS4class{CellDataStore} object.}
+\item{object}{A \link[=CellDataStore-class]{CellDataStore} object.}
 }
 \value{
 The full cell-level data frame.

@@ -7,7 +7,7 @@
 \S4method{show}{CellQueryInfo}(object)
 }
 \arguments{
-\item{object}{A \linkS4class{CellQueryInfo} object.}
+\item{object}{A \link[=CellQueryInfo-class]{CellQueryInfo} object.}
 }
 \value{
 Invisibly returns \code{object}.

@@ -7,10 +7,10 @@
 replace_full_with_selected_cell_data(object)
 }
 \arguments{
-\item{object}{A \linkS4class{CellDataStore} object.}
+\item{object}{A \link[=CellDataStore-class]{CellDataStore} object.}
 }
 \value{
-Updated \linkS4class{CellDataStore} object.
+Updated \link[=CellDataStore-class]{CellDataStore} object.
 }
 \description{
 Commits the currently selected view by replacing \code{full_df} with

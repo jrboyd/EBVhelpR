@@ -7,10 +7,10 @@
 load_query_cell_data_store(object)
 }
 \arguments{
-\item{object}{A \linkS4class{CellQueryInfo} object.}
+\item{object}{A \link[=CellQueryInfo-class]{CellQueryInfo} object.}
 }
 \value{
-A \linkS4class{CellDataStore} object.
+A \link[=CellDataStore-class]{CellDataStore} object.
 }
 \description{
 Convenience wrapper around \code{\link[=load_query_cell_data]{load_query_cell_data()}} + \code{\link[=new_cell_data_store]{new_cell_data_store()}}.

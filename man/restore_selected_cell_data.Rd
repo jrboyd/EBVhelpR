@@ -7,10 +7,10 @@
 restore_selected_cell_data(object)
 }
 \arguments{
-\item{object}{A \linkS4class{CellDataStore} object.}
+\item{object}{A \link[=CellDataStore-class]{CellDataStore} object.}
 }
 \value{
-Updated \linkS4class{CellDataStore} object.
+Updated \link[=CellDataStore-class]{CellDataStore} object.
 }
 \description{
 Resets \code{selected_df} to the complete \code{full_df}.

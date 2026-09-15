@@ -7,12 +7,12 @@
 set_selected_sample_ids(object, selected_sample_ids)
 }
 \arguments{
-\item{object}{A \linkS4class{CellQueryInfo} object.}
+\item{object}{A \link[=CellQueryInfo-class]{CellQueryInfo} object.}
 
 \item{selected_sample_ids}{Character vector of selected sample ids.}
 }
 \value{
-Updated \linkS4class{CellQueryInfo} object.
+Updated \link[=CellQueryInfo-class]{CellQueryInfo} object.
 }
 \description{
 Set Selected Sample IDs

@@ -9,7 +9,8 @@ load_wgs_bigwig_pileup(
   genome_gr,
   viral_seqname = "NC_007605.1",
   smooth_n = 50,
-  mc_cores = 1
+  mc_cores = 1,
+  ...
 )
 }
 \arguments{
