@@ -4,18 +4,26 @@
 \alias{EBV_CHANNELS}
 \title{Channel identities in tiff files.}
 \format{
-A named list with three character elements:
+A named list of three character vectors, named by assay type:
 \describe{
-\item{Phenocycler}{\code{"Phenocycler"}}
-\item{RNAScope_4plex}{\code{"RNAScope_4plex"}}
-\item{RNAScope_3plex+IF}{\code{"RNAScope_3plex+IF"}}
+\item{Phenocycler}{16 channels, DAPI first.}
+\item{RNAScope_4plex}{6 channels: DAPI, EBER1, EBNA2, LMP1, EBNA3, Autofluorescence.}
+\item{RNAScope_3plex+IF}{6 channels: DAPI, EBER, LMP1, EBNA1, EBNA1-Ab, Autofluorescence.}
 }
 }
 \usage{
 EBV_CHANNELS
 }
 \description{
-Named list of channel names.
+Named list of channel names, one character vector per assay. The vectors are
+positional: element \code{n} is the identity of channel \code{n} in the TIFF, which is
+how they are passed to \code{channel_names} when fetching crops.
+}
+\details{
+The autofluorescence channel of both RNAscope panels is named
+\code{"Autofluorescence"}. Before version 0.1.8 it was misspelled
+\code{"Autofluoresence"}, so code matching that string will silently stop
+matching; the corrected spelling agrees with the analysis scripts.
 }
 \examples{
 EBV_CHANNELS$RNAScope_4plex

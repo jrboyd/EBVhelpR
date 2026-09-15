@@ -3,11 +3,11 @@
 #' Named list of supported assay type identifiers used by data loaders,
 #' query constructors, and filtering helpers throughout the package.
 #'
-#' @format A named list with three character elements:
+#' @format A named list of three character vectors, named by assay type:
 #' \describe{
-#'   \item{Phenocycler}{`"Phenocycler"`}
-#'   \item{RNAScope_4plex}{`"RNAScope_4plex"`}
-#'   \item{RNAScope_3plex+IF}{`"RNAScope_3plex+IF"`}
+#'   \item{Phenocycler}{16 channels, DAPI first.}
+#'   \item{RNAScope_4plex}{6 channels: DAPI, EBER1, EBNA2, LMP1, EBNA3, Autofluorescence.}
+#'   \item{RNAScope_3plex+IF}{6 channels: DAPI, EBER, LMP1, EBNA1, EBNA1-Ab, Autofluorescence.}
 #' }
 #' @examples
 #' EBV_ASSAY_TYPES$RNAScope_4plex
@@ -126,8 +126,9 @@ EBV_CHANNELS$RNAScope_4plex = c(
     "EBNA2",
     "LMP1",
     "EBNA3",
-    "Autofluoresence"
+    "Autofluorescence"
 )
+stopifnot(EBV_CHANNELS$RNAScope_4plex[6] == "Autofluorescence")
 
 # For the RNAScope + IF the channels are set up like this:
 #
@@ -149,18 +150,26 @@ EBV_CHANNELS$`RNAScope_3plex+IF` = c(
     "LMP1",
     "EBNA1",
     "EBNA1-Ab",
-    "Autofluoresence"
+    "Autofluorescence"
 )
+stopifnot(EBV_CHANNELS$`RNAScope_3plex+IF`[6] == "Autofluorescence")
 
 #' Channel identities in tiff files.
 #'
-#' Named list of channel names.
+#' Named list of channel names, one character vector per assay. The vectors are
+#' positional: element `n` is the identity of channel `n` in the TIFF, which is
+#' how they are passed to `channel_names` when fetching crops.
 #'
-#' @format A named list with three character elements:
+#' The autofluorescence channel of both RNAscope panels is named
+#' `"Autofluorescence"`. Before version 0.1.8 it was misspelled
+#' `"Autofluoresence"`, so code matching that string will silently stop
+#' matching; the corrected spelling agrees with the analysis scripts.
+#'
+#' @format A named list of three character vectors, named by assay type:
 #' \describe{
-#'   \item{Phenocycler}{`"Phenocycler"`}
-#'   \item{RNAScope_4plex}{`"RNAScope_4plex"`}
-#'   \item{RNAScope_3plex+IF}{`"RNAScope_3plex+IF"`}
+#'   \item{Phenocycler}{16 channels, DAPI first.}
+#'   \item{RNAScope_4plex}{6 channels: DAPI, EBER1, EBNA2, LMP1, EBNA3, Autofluorescence.}
+#'   \item{RNAScope_3plex+IF}{6 channels: DAPI, EBER, LMP1, EBNA1, EBNA1-Ab, Autofluorescence.}
 #' }
 #' @examples
 #' EBV_CHANNELS$RNAScope_4plex
