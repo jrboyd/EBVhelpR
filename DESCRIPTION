@@ -1,7 +1,7 @@
 Package: EBVhelpR
 Type: Package
 Title: EBV DLBCL Project Data Help in R
-Version: 0.1.8
+Version: 0.1.9
 Authors@R: c(
     person(
       "Joseph", "Boyd",
@@ -43,4 +43,4 @@ Remotes:
     jrboyd/TiffPlotR
 Config/testthat/edition: 3
 Roxygen: list(markdown = TRUE)
-Config/roxygen2/version: 8.0.0
+Config/roxygen2/version: 8.1.0

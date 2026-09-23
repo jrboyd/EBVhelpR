@@ -176,6 +176,8 @@ load_phenocycler_summary_files <- function(data_dir = NULL) {
         mutate(sample_id = gsub("-", "_", sample_id)) %>%
         mutate(sample_id = sub("DEB", "D_EB_", sample_id)) %>%
         mutate(sample_id = sub("CTEBV", "CTEBV_", sample_id)) %>%
+        # CellPelletSlide_Control_* is the negative-control slide, not a second
+        # stain: GM18502 reads 2.4% EBNA2+ on it against 86% on CellPelletSlide_Test_*.
         mutate(probe_control = ifelse(grepl("Control", sample_id), "negative_probe", "")) %>%
         mutate(sample_id = sub("CellPelletSlide_Control_Scan1_Phenocycler_", "", sample_id)) %>%
         mutate(sample_id = sub("CellPelletSlide_Test_Scan1_Phenocycler_", "", sample_id)) %>%
@@ -192,5 +194,6 @@ load_phenocycler_summary_files <- function(data_dir = NULL) {
     )
     pcycler_dt$assay = EBV_ASSAY_TYPES$Phenocycler
     pcycler_dt$project_name = assay_to_project_name[EBV_ASSAY_TYPES$Phenocycler]
+    .warn_probe_controls(pcycler_dt, "load_phenocycler_summary_files")
     pcycler_dt
 }

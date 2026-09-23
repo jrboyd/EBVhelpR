@@ -82,8 +82,10 @@ load_rnascope_summary_files <- function(data_dir = NULL) {
 
 
     rscope_dt$probe_control = ""
-    rscope_dt = rscope_dt %>% dplyr::mutate(probe_control = ifelse(grepl("[Nn]eg", Sample) | grepl("[Nn]eg", SampleNumber), "negative_probe", probe_control))
-    rscope_dt = rscope_dt %>% dplyr::mutate(probe_control = ifelse(grepl("[Pp]os", Sample) | grepl("[Pp]os", SampleNumber), "positive_probe", probe_control))
+    # The suffix is stripped from sample_id below so a control stays linked to
+    # its sample -- which means grouping by sample_id pools it in (see ?probe_controls).
+    rscope_dt = rscope_dt %>% dplyr::mutate(probe_control = ifelse(grepl(.PROBE_NEG_PATTERN, Sample) | grepl(.PROBE_NEG_PATTERN, SampleNumber), "negative_probe", probe_control))
+    rscope_dt = rscope_dt %>% dplyr::mutate(probe_control = ifelse(grepl(.PROBE_POS_PATTERN, Sample) | grepl(.PROBE_POS_PATTERN, SampleNumber), "positive_probe", probe_control))
     rscope_dt = rscope_dt %>% dplyr::mutate(sample_id = sub("NegCTL", "", sample_id))  %>% dplyr::mutate(sample_id = sub("PosCTL", "", sample_id))
 
     setdiff(rscope_dt$sample_id, meta_df$sample_id)
@@ -99,6 +101,7 @@ load_rnascope_summary_files <- function(data_dir = NULL) {
         rscope_dt$project_name <- assay_to_project_name[rscope_dt$assay]
     }
 
+    .warn_probe_controls(rscope_dt, "load_rnascope_summary_files")
     rscope_dt
 }
 
@@ -149,6 +152,7 @@ load_cell_source_files <- function() {
             name = gsub("_Rescanned", "", .data$name)
         )  |>
         dplyr::mutate( #Phenocycler specific
+            # The Control slide is the negative-control slide (see ?probe_controls).
             name = sub("_Control_", "_NegCTL_", .data$name)
         ) |>
         dplyr::mutate(
@@ -243,5 +247,6 @@ load_cell_source_files <- function() {
     cell_counts = cell_counts[cell_counts$file != "total", , drop = FALSE]
     final_df = merge(final_df, cell_counts, all.x = TRUE)
 
+    .warn_probe_controls(final_df, "load_cell_source_files")
     final_df
 }

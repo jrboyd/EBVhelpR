@@ -1,3 +1,7 @@
+# These fixtures include probe-control sections on purpose; the loaders'
+# probe-control warning is covered in test-probe-controls.R.
+withr::local_options(EBVhelpR.warn_probe_controls = FALSE)
+
 required_cols <- c("sample_id", "assay", "project_name")
 
 expect_required_layout_live <- function(x) {

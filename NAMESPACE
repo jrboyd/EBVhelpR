@@ -12,6 +12,7 @@ export(EBV_ASSAY_TYPES)
 export(EBV_CHANNELS)
 export(EBV_OPAL_DECODE)
 export(EBV_OPAL_USABLE)
+export(check_summary_against_cell_files)
 export(fetch_representative_tiff_images)
 export(filter_query_to_all_cell_file_samples)
 export(filter_query_to_tiff_path_samples)
@@ -55,12 +56,14 @@ import(Rsamtools)
 import(TiffPlotR)
 import(rlang)
 import(seqsetvis)
-importFrom(dplyr,arrange)
-importFrom(dplyr,distinct)
-importFrom(dplyr,filter)
-importFrom(dplyr,mutate)
-importFrom(dplyr,select)
-importFrom(dplyr,slice)
+importFrom(dplyr,
+  arrange,
+  distinct,
+  filter,
+  mutate,
+  select,
+  slice
+)
 importFrom(glue,glue)
 importFrom(lifecycle,deprecated)
 importFrom(magrittr,"%>%")

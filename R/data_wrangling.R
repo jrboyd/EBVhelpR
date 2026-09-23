@@ -255,8 +255,8 @@ get_tiff_file_path_df = function(){
     }
 
     tiff_df$probe_control = ""
-    tiff_df = tiff_df %>% dplyr::mutate(probe_control = ifelse(grepl("[Nn]eg", sample_id), "negative_probe", probe_control))
-    tiff_df = tiff_df %>% dplyr::mutate(probe_control = ifelse(grepl("[Pp]os", sample_id), "positive_probe", probe_control))
+    tiff_df = tiff_df %>% dplyr::mutate(probe_control = ifelse(grepl(.PROBE_NEG_PATTERN, sample_id), "negative_probe", probe_control))
+    tiff_df = tiff_df %>% dplyr::mutate(probe_control = ifelse(grepl(.PROBE_POS_PATTERN, sample_id), "positive_probe", probe_control))
 
     tiff_df$sample_id <- sub("_?NegCTL", "", tiff_df$sample_id)
     tiff_df$sample_id <- sub("_?PosCTL", "", tiff_df$sample_id)

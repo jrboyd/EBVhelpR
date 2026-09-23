@@ -89,15 +89,18 @@ CellQuery <- function(
         message("Select valid assay types with EBV_ASSAY_TYPES, i.e. EBV_ASSAY_TYPES$RNAScope_4plex")
     }
     stopifnot(assay_type %in% EBV_ASSAY_TYPES)
+    # CellQuery keys rows on unique_id, which keeps probe controls apart, so the
+    # loaders' probe-control warning is noise here. The accessors warn instead,
+    # on what they actually hand back.
     if(assay_type == EBV_ASSAY_TYPES$Phenocycler){
-        summary_df = load_phenocycler_summary_files()
+        summary_df = .without_probe_warnings(load_phenocycler_summary_files())
     }else if(assay_type %in% c(EBV_ASSAY_TYPES$RNAScope_4plex, EBV_ASSAY_TYPES$`RNAScope_3plex+IF`)){
-        summary_df = load_rnascope_summary_files()
+        summary_df = .without_probe_warnings(load_rnascope_summary_files())
         summary_df = dplyr::filter(summary_df, assay == assay_type)
     }else{
         stop("Unrecognized assay type, see EBV_ASSAY_TYPES")
     }
-    all_cell_files_df = load_cell_source_files()
+    all_cell_files_df = .without_probe_warnings(load_cell_source_files())
     all_cell_files_df = dplyr::filter(all_cell_files_df, assay == assay_type)
 
     tiff_paths_df = get_tiff_file_path_df()
@@ -312,11 +315,14 @@ filter_query_to_tiff_path_samples <- function(object) {
 #' @export
 get_query_summary_df <- function(object, selected_only = TRUE) {
     stopifnot(methods::is(object, "CellQueryInfo"))
-    if (!selected_only) {
-        return(object@summary_df)
+    out <- if (!selected_only) {
+        object@summary_df
+    } else {
+        .filter_by_selected_sample_ids(object@summary_df, object@selected_sample_ids) %>%
+            .filter_by_selected_sample_ids(., object@selected_unique_ids, sample_col = "unique_id")
     }
-    .filter_by_selected_sample_ids(object@summary_df, object@selected_sample_ids) %>%
-        .filter_by_selected_sample_ids(., object@selected_unique_ids, sample_col = "unique_id")
+    .warn_probe_controls(out, "get_query_summary_df")
+    out
 }
 
 #' Get Cell File Rows From CellQueryInfo
@@ -331,11 +337,14 @@ get_query_summary_df <- function(object, selected_only = TRUE) {
 #' @export
 get_query_cell_files_df <- function(object, selected_only = TRUE) {
     stopifnot(methods::is(object, "CellQueryInfo"))
-    if (!selected_only) {
-        return(object@all_cell_files_df)
+    out <- if (!selected_only) {
+        object@all_cell_files_df
+    } else {
+        .filter_by_selected_sample_ids(object@all_cell_files_df, object@selected_sample_ids) %>%
+            .filter_by_selected_sample_ids(., object@selected_unique_ids, sample_col = "unique_id")
     }
-    .filter_by_selected_sample_ids(object@all_cell_files_df, object@selected_sample_ids) %>%
-        .filter_by_selected_sample_ids(., object@selected_unique_ids, sample_col = "unique_id")
+    .warn_probe_controls(out, "get_query_cell_files_df")
+    out
 }
 
 #' Get TIFF Path Rows From CellQueryInfo

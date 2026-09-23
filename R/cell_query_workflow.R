@@ -100,7 +100,12 @@
 load_query_cell_data <- function(object, sample_col = "unique_id") {
     stopifnot(methods::is(object, "CellQueryInfo"))
 
-    cell_info_df <- get_query_cell_files_df(object)
+    # Keyed by unique_id (the default) probe controls stay separate; keyed by
+    # sample_id they are loaded under their parent sample's name.
+    cell_info_df <- .without_probe_warnings(get_query_cell_files_df(object))
+    if (sample_col == "sample_id") {
+        .warn_probe_controls(cell_info_df, "load_query_cell_data")
+    }
     if (!nrow(cell_info_df)) {
         return(data.frame())
     }
