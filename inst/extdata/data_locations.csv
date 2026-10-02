@@ -1,0 +1,15 @@
+location_id,priority,role,mirror_subdir,candidate,description
+labshare,1,source,files.med.uvm.edu/shared/Centers/CBSR/PI/Volaric,//files.med.uvm.edu/shared/Centers/CBSR/PI/Volaric,"Lab share. Kyra writes HALO exports, IHC and scanner output here; files are created on their acquisition dates (verified 2026-10-02)"
+labshare,1,source,files.med.uvm.edu/shared/Centers/CBSR/PI/Volaric,L:/Centers/CBSR/PI/Volaric,Windows mapped drive (jrboyd workstation)
+labshare,1,source,files.med.uvm.edu/shared/Centers/CBSR/PI/Volaric,/mnt/l/Centers/CBSR/PI/Volaric,"WSL; needs: wsl -u root mount -t drvfs L: /mnt/l -o ro (slow, ~3 MB/s; copy on the Windows side for big files)"
+labshare,1,source,files.med.uvm.edu/shared/Centers/CBSR/PI/Volaric,Z:/Centers/CBSR/PI/Volaric,Mapping used in Kyra's Rmds
+fusion,2,copy,MICNAS2/MICimage/FUSION DATA/AshleyVolaric,//MICNAS2/MICimage/FUSION DATA/AshleyVolaric,"Microscopy core NAS. A bulk copy made 2026-02-19 in EBVhelpR's assay layout; holds some images that are on no other source (RNAscope Round-2 crops, pellets, 2468 rescans)"
+fusion,2,copy,MICNAS2/MICimage/FUSION DATA/AshleyVolaric,Z:/FUSION DATA/AshleyVolaric,Windows mapped drive (jrboyd workstation)
+fusion,2,copy,MICNAS2/MICimage/FUSION DATA/AshleyVolaric,/mnt/z/FUSION DATA/AshleyVolaric,WSL (mount Z: like L:)
+kyra_onedrive,3,copy,onedrive/Lee_Kyra_VolaricDataAndScriptsForJoe,/mnt/c/Users/*/OneDrive - UVM Larner College of Medicine/Lee*Kyra*VolaricDataAndScriptsForJoe,"Kyra's OneDrive share: a strict subset of the lab share (224/224 files same name, size, mtime; 2026-10-02)"
+kyra_onedrive,3,copy,onedrive/Lee_Kyra_VolaricDataAndScriptsForJoe,C:/Users/*/OneDrive - UVM Larner College of Medicine/Lee*Kyra*VolaricDataAndScriptsForJoe,Windows
+kyra_onedrive,3,copy,onedrive/Lee_Kyra_VolaricDataAndScriptsForJoe,/gpfs1/home/j/r/jrboyd/VolaricDataAndScriptsForJoe,VACC home copy; many files are NUL from failed OneDrive hydration
+netfiles,4,copy,netfiles/volaric_research,/netfiles/volaric_research,"VACC. Downstream of the others (copied 2026-01-14 and 2026-02-26 to 2026-04-17); some copies are truncated"
+ebvhelpr_data,9,derived,onedrive/EBVhelpR_data,/mnt/c/Users/*/OneDrive - UVM Larner College of Medicine/EBVhelpR_data,Per-sample cell stores wrangled by EBVhelpR from the HALO exports
+ebvhelpr_data,9,derived,onedrive/EBVhelpR_data,C:/Users/*/OneDrive - UVM Larner College of Medicine/EBVhelpR_data,Windows
+ebvhelpr_data,9,derived,onedrive/EBVhelpR_data,/gpfs1/home/j/r/jrboyd/EBVhelpR_data,VACC

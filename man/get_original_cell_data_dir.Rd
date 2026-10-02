@@ -11,7 +11,8 @@ Character scalar path to the discovered original cell data directory.
 }
 \description{
 Resolves the root directory containing raw cell data inputs by checking
-\code{EBVHELPER_DATA_DIR} first, then known default Windows and Linux paths.
+\code{EBVHELPER_DATA_DIR} first, then the \code{kyra_onedrive} location of the data
+registry (\code{\link[=ebv_location_root]{ebv_location_root()}}), then the legacy default paths.
 }
 \examples{
 \dontrun{

@@ -171,13 +171,15 @@ write_package_data_for_file <- function(file) {
 #' }
 get_tiff_file_path_df = function(){
     env_dir = Sys.getenv("EBVHELPER_IMAGE_DIR", unset = "")
+    # the registered image tree: fusion, then netfiles (see ebv_data_sources())
+    reg_dir = ebv_path("img_tree", must_work = FALSE)
     win_dir = "Z:/FUSION DATA/AshleyVolaric"
     win_dir2 = "C:/Users/boydj/project_data/EBV_image_files"
     win_dir3 = "G:/project_data/EBV_image_files"
     lin_dir = "/netfiles/volaric_research/DLBCL_EBV_detection/image_files"
 
-    candidates = c(env_dir, win_dir, lin_dir, win_dir2, win_dir3)
-    candidates = candidates[nzchar(candidates)]
+    candidates = c(env_dir, reg_dir, win_dir, lin_dir, win_dir2, win_dir3)
+    candidates = candidates[!is.na(candidates) & nzchar(candidates)]
     existing = candidates[dir.exists(candidates)]
     tiff_dir = if(length(existing)) existing[[1]] else NA_character_
 

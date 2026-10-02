@@ -13,6 +13,16 @@ export(EBV_CHANNELS)
 export(EBV_OPAL_DECODE)
 export(EBV_OPAL_USABLE)
 export(check_summary_against_cell_files)
+export(ebv_cleanup_log)
+export(ebv_data_locations)
+export(ebv_data_sources)
+export(ebv_dataset_paths)
+export(ebv_location_root)
+export(ebv_log_cleanup)
+export(ebv_mirror_dir)
+export(ebv_mirror_fetch)
+export(ebv_mirror_manifest)
+export(ebv_path)
 export(fetch_representative_tiff_images)
 export(filter_query_to_all_cell_file_samples)
 export(filter_query_to_tiff_path_samples)
@@ -56,14 +66,12 @@ import(Rsamtools)
 import(TiffPlotR)
 import(rlang)
 import(seqsetvis)
-importFrom(dplyr,
-  arrange,
-  distinct,
-  filter,
-  mutate,
-  select,
-  slice
-)
+importFrom(dplyr,arrange)
+importFrom(dplyr,distinct)
+importFrom(dplyr,filter)
+importFrom(dplyr,mutate)
+importFrom(dplyr,select)
+importFrom(dplyr,slice)
 importFrom(glue,glue)
 importFrom(lifecycle,deprecated)
 importFrom(magrittr,"%>%")

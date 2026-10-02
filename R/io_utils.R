@@ -26,7 +26,8 @@
 #' Get Original Cell Data Directory
 #'
 #' Resolves the root directory containing raw cell data inputs by checking
-#' `EBVHELPER_DATA_DIR` first, then known default Windows and Linux paths.
+#' `EBVHELPER_DATA_DIR` first, then the `kyra_onedrive` location of the data
+#' registry ([ebv_location_root()]), then the legacy default paths.
 #'
 #' @return Character scalar path to the discovered original cell data directory.
 #' @examples
@@ -36,10 +37,11 @@
 #' @export
 get_original_cell_data_dir <- function() {
   env_dir <- Sys.getenv("EBVHELPER_DATA_DIR", unset = "")
+  reg_dir <- ebv_location_root("kyra_onedrive")
   win_dir <- "C:/Users/boydj/OneDrive - UVM Larner College of Medicine/Lee, Kyra C's files - VolaricDataAndScriptsForJoe/"
   lin_dir <- "/gpfs1/home/j/r/jrboyd/VolaricDataAndScriptsForJoe/"
 
-  candidates <- c(env_dir, win_dir, lin_dir)
+  candidates <- c(env_dir, if (!is.na(reg_dir)) reg_dir, win_dir, lin_dir)
   candidates <- candidates[nzchar(candidates)]
   existing <- candidates[dir.exists(candidates)]
 
@@ -86,7 +88,10 @@ get_original_cell_data_dir <- function() {
 #' Get Wrangled Cell Data Directory
 #'
 #' Returns the directory where processed package-ready cell data files are
-#' written. This path is derived from [get_original_cell_data_dir()].
+#' written. If `EBVHELPER_DATA_DIR` is set this is its sibling `EBVhelpR_data`,
+#' as before. Otherwise it is the registered `cell_stores` dataset
+#' ([ebv_path()]: a verified mirror copy, else the `ebvhelpr_data` location),
+#' falling back to the sibling of [get_original_cell_data_dir()].
 #'
 #' @return Character scalar path to the package wrangled cell data directory.
 #' @examples
@@ -95,6 +100,10 @@ get_original_cell_data_dir <- function() {
 #' }
 #' @export
 get_wrangled_cell_data_dir <- function() {
+  if (!nzchar(Sys.getenv("EBVHELPER_DATA_DIR", unset = ""))) {
+    reg <- ebv_path("cell_stores", must_work = FALSE)
+    if (!is.na(reg)) return(reg)
+  }
   file.path(get_original_cell_data_dir(), "../EBVhelpR_data")
 }
 

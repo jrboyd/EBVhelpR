@@ -1,7 +1,7 @@
 Package: EBVhelpR
 Type: Package
 Title: EBV DLBCL Project Data Help in R
-Version: 0.1.9
+Version: 0.1.10
 Authors@R: c(
     person(
       "Joseph", "Boyd",
@@ -30,6 +30,7 @@ Imports:
     seqsetvis,
     stats,
     tidyr,
+    tools,
     tibble,
     TiffPlotR (>= 0.1.3),
     rlang,

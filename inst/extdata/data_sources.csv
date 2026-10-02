@@ -1,0 +1,41 @@
+dataset_id,kind,tier,assay,description,labshare,fusion,kyra_onedrive,netfiles,ebvhelpr_data,bytes,mtime_utc,notes
+ihc_clean_2025_09_03,file,mirror,IHC,"Clinical IHC per case: % EBER-ISH, LMP1, EBNA1, EBNA2, CD30, c-Myc, PD1, PDL1, LatencyPattern",Volaric_R_Analysis/OldAnalysis/IHC_CleanData_2025-09-03.csv,,,,,6080,2025-09-03T13:06:12Z,LatencyPattern is presence-based (EBNA2>0 -> 3; LMP1>0 -> 2; else 1)
+ihc_long_2025_09_04,file,mirror,IHC,"Same IHC table, long form (the version Kyra's Rmds read)",Volaric_R_Analysis/OldAnalysis/IHC_LongData_2025-09-04.csv,,,,,8047,2025-09-04T17:36:47Z,
+ihc_workbook_2025_09_03,file,mirror,IHC,Source workbook of the IHC CSVs,Volaric_R_Analysis/OldAnalysis/IHCData.xlsx,,,,,14456,2025-09-03T12:32:20Z,
+ihc_master_case_list,file,reference,IHC,UVMMC EBV IHC master case list,Volaric_R_Analysis/OldAnalysis/EBVIHC_MasterCaseList_UVMMC_akv_Sara_Tonni_2SEPT25_FINAL.xlsx,,,,,47616,2025-09-03T12:08:16Z,Password-encrypted; probable PHI. Never mirror.
+ebv_status_xlsx,file,mirror,metadata,"Kyra's sample status workbook (diagnosis, Type = known-latency labels)",Volaric_R_Analysis/OldAnalysis/OldDataframes/EBVStatus.xlsx,,EBVStatus.xlsx,,,13904,2024-09-20T16:39:57Z,eber_status.xlsx in this package is authoritative for EBER status
+slide_tracking_2024,file,mirror,metadata,Slide tracking sheet (2024),SlideTracking.xlsx,,,,,10025,2024-09-09T18:57:27Z,Earlier than SlideTracking1.xlsx received 2026-09-28
+slide_tracking_2025,file,mirror,metadata,Slide tracking sheet (updated Jan 2025),SlideTracking_Updated.xlsx,,,,,11908,2025-01-23T13:42:49Z,
+phenocycler_panel_cycles,file,mirror,Phenocycler,Antibody-to-cycle draft for the 16-plex panel,PhenocyclerAbs_CyclesDraft.xlsx,,,,,16717,2024-05-15T14:53:29Z,
+pellet_tma_key,file,mirror,Phenocycler,Cell-pellet TMA key,LM25-060_CellPellet_Phenocycler/CellPelletTMAKey.xlsx,,,Phenocycler/dlbcl_phenocycler_2025/CellPelletTMAKey.xlsx,,9427,2025-07-18T17:06:27Z,
+methods_draft_2026_01,file,mirror,docs,Methods draft,MethodsDraft1.docx,,,,,20201,2026-01-08T20:08:10Z,
+project_status_2026_02,file,mirror,docs,"Project status deck (Opal 690 / C4 probe notes, dye maps)",VolaricProjectStatus_02102026.pptx,,VolaricProjectStatus_02102026.pptx,,,18504827,2026-02-11T15:13:07Z,
+halo_settings_pheno_2024_08,file,mirror,Phenocycler,HALO HighPlex FL v4.1.3 settings (Aug-2024 Phenocycler algorithm),,Volaric08142024- HighPlex FL v4.1.3.analysissettings,,,,19233,2026-04-14T18:25:32Z,
+pheno_tumor_region_2024,file,split,Phenocycler,"Oct-2024 Phenocycler HALO export with Tumor/Non-Tumor analysis regions (only export with regions; also has D-EB-26, D-EB-33, CTEBV4)",Volaric_R_Analysis/OldAnalysis/TumorvsNonTumor_objectData_Cleaned_10142024.csv,,,,,14062416883,2024-10-15T17:30:06Z,Uses the _Redo scans for CTEBV11/D-EB-4/D-EB-9
+pheno_coexpression_2024_10,file,mirror,Phenocycler,Oct-2024 coexpression summary by sample and region,Volaric_R_Analysis/OldAnalysis/OldDataframes/CoexpressionBySample_10162024.csv,,,,,4215639,2024-10-16T15:48:15Z,
+pheno_reanalysis_2025_10,dir,split,Phenocycler,"Oct-2025 Phenocycler HALO re-analysis: summaries, settings, object monoliths (source of the per-cell stores)",PhenocyclerReAnalysis_102025,,PhenocyclerReAnalysis_102025,PhenocyclerReAnalysis_102025,,,,netfiles copy lacks most ObjectData; VACC-home OneDrive copy partly NUL
+rnascope4_objects_2026_01,file,split,RNAScope_4plex,Jan-2026 4-plex HALO object export (source of the 4-plex stores),Analysis_Jan2026/4PlexRNAScope/ObjectData/4PlexRNAScope_Jan2026_Object_Results.csv,,4PlexRNAScope_Jan2026_Object_Results.csv,,,13324434111,2026-01-09T20:01:13Z,
+rnascope4_summary_2026_01,file,mirror,RNAScope_4plex,Jan-2026 4-plex HALO summary,Analysis_Jan2026/4PlexRNAScope/Total_Summary_Results.csv,,,,,81792,2026-01-09T19:11:11Z,
+rnascope4_settings_2026_01,dir,mirror,RNAScope_4plex,Jan-2026 4-plex HALO settings (FISH v3.3.1),Analysis_Jan2026/4PlexRNAScope/Settings,,,,,,,
+rnascope4_pellet_objects_2026_01,file,mirror,RNAScope_4plex,Jan-2026 4-plex cell-pellet object export,Analysis_Jan2026/CellPelletRNAScope/ObjectData/4PlexRNAScope_CellPellet_Jan2026_Object_Results.csv,,4PlexRNAScope_CellPellet_Jan2026_Object_Results.csv,,,39654183,2026-01-07T20:46:33Z,Also at Volaric_R_Analysis/ on the lab share
+rnascope4_update_2025_11,dir,reference,RNAScope_4plex,Nov-2025 4-plex HALO run (earlier than Jan-2026),RNAScope_EBR1-LMP1-EBNA2-EBNA3_08012025/Updated11192025,,,Updated11192025,,,,netfiles copy has no ObjectData
+rnascopeIF_objects_2026_02,file,split,RNAScope_3plex+IF,Feb-2026 3-plex+IF HALO object export (source of the 3-plex+IF stores),RNAScopeIF_Feb2026/ExperimentalSamples/ObjectData/RNAScopeIF_Object_Results_02112026.csv,,RNAScopeIF_Object_Results_02112026.csv,,,10556156059,2026-02-11T13:54:24Z,Assay excluded from latency calls
+rnascopeIF_pellet_objects_2026_02,file,mirror,RNAScope_3plex+IF,Feb-2026 3-plex+IF cell-pellet object export,RNAScopeIF_Feb2026/CellPelletControls/ObjectData/RNAScopeIF_CellPellet_Object_Results_02102026.csv,,RNAScopeIF_CellPellet_Object_Results_02102026.csv,,,40202305,2026-02-10T14:42:43Z,
+cell_stores,dir,mirror,all,Per-sample cell stores (*.cell_data.csv) wrangled by EBVhelpR from the HALO exports above,,,,,.,,,Derived; 26 GB. Rebuild from pheno_reanalysis_2025_10 / rnascope4_objects_2026_01 / rnascopeIF_objects_2026_02
+img_tree,dir,reference,all,"Image root in EBVhelpR's assay layout (Phenocycler/, RNAScopeRound1/, RNAScopeRound2/) read by get_tiff_file_path_df()",,.,,DLBCL_EBV_detection/image_files,,,,Directory names do not describe contents: Phenocycler/ holds RNAscope Round-2 crops. Select by channel count (P1 results/tiff_inventory.csv)
+img_pheno_16plex,dir,reference,Phenocycler,16-plex Phenocycler image crops (what the per-cell stores were segmented on),ExperimentalSamples_2024/Crops,,,PhenocyclerImageCrops,,,,
+img_pheno_original_scans,dir,reference,Phenocycler,Phenocycler original .qptiff scans,ExperimentalSamples_2024/Original Scans,,,PhenocyclerOriginalScans,,,,netfiles copy holds only .lock stubs
+img_rnascope4,dir,reference,RNAScope_4plex,4-plex RNAscope images (Jan 2025 run),RNAScopeImagesForAnalysis/EBER_EBNA2_LMP1_EBNA3_Jan2025,RNAScopeRound1,,DLBCL_EBV_detection/image_files/RNAScopeRound1,,,,"fusion/netfiles dirs also hold pellet images and the 2468 rescans, which are not on the lab share"
+img_rnascopeIF_unmixed,dir,reference,RNAScope_3plex+IF,3-plex+IF full-slide unmixed images,,RNAScopeRound2,,DLBCL_EBV_detection/image_files/RNAScopeRound2,,,,On the lab share they are spread over EBNA1_LMP1_EBNA2_RNAScopeIF_June2025/LM25-05*/Unmixed*
+img_rnascopeIF_crops,dir,reference,RNAScope_3plex+IF,3-plex+IF cropped images (in a directory named Phenocycler),,Phenocycler,,DLBCL_EBV_detection/image_files/Phenocycler,,,,Not on the lab share; fusion is the highest copy found
+img_post_pheno_he,dir,reference,Phenocycler,Post-Phenocycler H&E scans (same slides),PostPhenocycler_AnnotatedH+Es,,,,,,,
+raw_pheno_batch1,dir,reference,Phenocycler,Phenocycler raw scans batch 1,LM24-083_Batch1,,,,,,,
+raw_pheno_batch2,dir,reference,Phenocycler,Phenocycler raw scans batch 2,LM24-088_Batch2,,,,,,,
+raw_pheno_batch3,dir,reference,Phenocycler,Phenocycler raw scans batch 3,LM24-093_Batch3,,,,,,,
+raw_pheno_batch4,dir,reference,Phenocycler,Phenocycler raw scans batch 4,LM24-100_Batch4,,,,,,,
+raw_pheno_batch5,dir,reference,Phenocycler,Phenocycler raw scans batch 5,LM24-103_Batch5,,,,,,,
+raw_pheno_batch6,dir,reference,Phenocycler,Phenocycler raw scans batch 6 (redos),LM24-155_Batch6,,,,,,,
+raw_rnascope4_batch1,dir,reference,RNAScope_4plex,4-plex raw scans batch 1,LM25-004_RNAScopeBatch1,,,,,,,
+raw_rnascope4_batch2,dir,reference,RNAScope_4plex,4-plex raw scans batch 2,LM25-008_RNAScope_Batch2,,,,,,,
+raw_rnascope4_batch1_redo,dir,reference,RNAScope_4plex,4-plex raw scans batch 1 redo (slides 2468-2479),LM25-013-RNAScope_Batch1Redo,,,,,,,
+raw_rnascopeIF,dir,reference,RNAScope_3plex+IF,"3-plex+IF raw scans, batches LM25-053/055/056",EBNA1_LMP1_EBNA2_RNAScopeIF_June2025,,,,,,,

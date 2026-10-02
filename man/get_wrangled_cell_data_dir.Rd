@@ -11,7 +11,10 @@ Character scalar path to the package wrangled cell data directory.
 }
 \description{
 Returns the directory where processed package-ready cell data files are
-written. This path is derived from \code{\link[=get_original_cell_data_dir]{get_original_cell_data_dir()}}.
+written. If \code{EBVHELPER_DATA_DIR} is set this is its sibling \code{EBVhelpR_data},
+as before. Otherwise it is the registered \code{cell_stores} dataset
+(\code{\link[=ebv_path]{ebv_path()}}: a verified mirror copy, else the \code{ebvhelpr_data} location),
+falling back to the sibling of \code{\link[=get_original_cell_data_dir]{get_original_cell_data_dir()}}.
 }
 \examples{
 \dontrun{
